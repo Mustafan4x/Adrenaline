@@ -22,6 +22,7 @@ from scraper import (
     build_fighter_database,
     build_fight_history_database,
     get_upcoming_card,
+    incremental_update,
     scrape_fighter_details,
     scrape_fight_detail,
     HEADERS,
@@ -54,6 +55,36 @@ with open(LOGO_PATH, "rb") as _lf:
     LOGO_B64 = base64.b64encode(_lf.read()).decode()
 LOGO_SRC = f"data:image/png;base64,{LOGO_B64}"
 LOGO_FILTER = "drop-shadow(0 0 4px rgba(211,47,47,0.5)) drop-shadow(0 0 10px rgba(211,47,47,0.2))"
+
+import random
+LOADING_SAYINGS = [
+    "Adrenaline pumping...",
+    "Stepping into the octagon...",
+    "Warming up the engines...",
+    "Wrapping the hands...",
+    "Fight camp in session...",
+    "Entering the cage...",
+    "Sizing up the competition...",
+    "Fueling the fire...",
+    "Getting fight ready...",
+    "Walking out to the octagon...",
+]
+
+def _loading_screen(text: str | None = None):
+    """Full-screen centered loading screen with logo and themed saying."""
+    saying = text or random.choice(LOADING_SAYINGS)
+    st.markdown(
+        f'<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;'
+        f'min-height:60vh;text-align:center;">'
+        f'<img src="{LOGO_SRC}" style="width:80px;height:80px;object-fit:contain;'
+        f'filter:{LOGO_FILTER};margin-bottom:1.5rem;'
+        f'animation:pulse 1.5s ease-in-out infinite;" />'
+        f'<div style="font-family:{HF};color:{AC};font-size:1.6rem;letter-spacing:2px;">ADRENALINE</div>'
+        f'<div style="font-family:{BF};color:#888;font-size:1rem;margin-top:0.8rem;letter-spacing:1px;">{saying}</div>'
+        f'</div>'
+        f'<style>@keyframes pulse {{ 0%,100% {{ opacity:1; }} 50% {{ opacity:0.4; }} }}</style>',
+        unsafe_allow_html=True,
+    )
 
 # Page config
 st.set_page_config(
@@ -607,15 +638,15 @@ def get_fighter_initials(name: str) -> str:
 
 # ── Data loading ─────────────────────────────────────────────────────────────
 
-@st.cache_resource(show_spinner="Loading fighter database...")
+@st.cache_resource(show_spinner=False)
 def load_fighters():
     return build_fighter_database(use_cache=True)
 
-@st.cache_resource(show_spinner="Loading fight history...")
+@st.cache_resource(show_spinner=False)
 def load_fights():
     return build_fight_history_database(use_cache=True)
 
-@st.cache_resource(show_spinner="Training prediction model...")
+@st.cache_resource(show_spinner=False)
 def get_trained_model(_fighters_df, _fights_df):
     predictor = UFCPredictor()
     predictor.load_data(_fighters_df, _fights_df)
@@ -910,7 +941,7 @@ def _render_radar_chart(prediction: dict):
     fa = prediction["fighter_a"]
     fb = prediction["fighter_b"]
 
-    labels = ["Striking", "Str Acc", "Str Def", "Takedowns", "TD Def", "Subs", "Win Rate", "Experience"]
+    labels = ["Striking", "Striking\nAccuracy", "Striking\nDefense", "Takedowns", "TD Def", "Subs", "Win Rate", "Experience"]
 
     def norm(val, mx):
         v = float(val or 0)
@@ -930,7 +961,7 @@ def _render_radar_chart(prediction: dict):
     ]
 
     n = len(labels)
-    cx, cy, r = 200, 200, 150
+    cx, cy, r = 250, 220, 150
 
     def polar_point(angle_idx, value, radius=r):
         angle = (2 * math.pi * angle_idx / n) - math.pi / 2
@@ -960,7 +991,13 @@ def _render_radar_chart(prediction: dict):
             anchor = "end"
         elif x > cx + 10:
             anchor = "start"
-        label_svg += f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="{anchor}" dominant-baseline="middle" fill="#bbb" font-size="13" font-family="Nunito Sans, sans-serif">{lbl}</text>'
+        lines = lbl.split("\n")
+        if len(lines) == 1:
+            label_svg += f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="{anchor}" dominant-baseline="middle" fill="#bbb" font-size="13" font-family="Nunito Sans, sans-serif">{lbl}</text>'
+        else:
+            y_start = y - 7 * (len(lines) - 1)
+            tspans = "".join(f'<tspan x="{x:.1f}" dy="{"0" if j == 0 else "14"}">{line}</tspan>' for j, line in enumerate(lines))
+            label_svg += f'<text text-anchor="{anchor}" dominant-baseline="middle" fill="#bbb" font-size="13" font-family="Nunito Sans, sans-serif" y="{y_start:.1f}">{tspans}</text>'
 
     # Dots
     dots_a = "".join(f'<circle cx="{polar_point(i, vals_a[i])[0]:.1f}" cy="{polar_point(i, vals_a[i])[1]:.1f}" r="4" fill="{AC}"/>' for i in range(n))
@@ -970,14 +1007,14 @@ def _render_radar_chart(prediction: dict):
     fb_last = fb["name"].split()[-1]
 
     svg = (
-        f'<svg viewBox="0 0 400 420" xmlns="http://www.w3.org/2000/svg" style="max-width:450px;margin:0 auto;display:block;">'
+        f'<svg viewBox="0 0 500 460" xmlns="http://www.w3.org/2000/svg" style="max-width:500px;margin:0 auto;display:block;">'
         f'{grid_svg}'
         f'<polygon points="{pts_a}" fill="{AC}" fill-opacity="0.15" stroke="{AC}" stroke-width="2"/>'
         f'<polygon points="{pts_b}" fill="#666" fill-opacity="0.1" stroke="#666" stroke-width="2"/>'
         f'{dots_a}{dots_b}'
         f'{label_svg}'
-        f'<circle cx="130" cy="400" r="6" fill="{AC}"/><text x="142" y="405" fill="#bbb" font-size="13" font-weight="bold" font-family="Nunito Sans, sans-serif">{fa_last}</text>'
-        f'<circle cx="230" cy="400" r="6" fill="#666"/><text x="242" y="405" fill="#bbb" font-size="13" font-weight="bold" font-family="Nunito Sans, sans-serif">{fb_last}</text>'
+        f'<circle cx="180" cy="440" r="6" fill="{AC}"/><text x="192" y="445" fill="#bbb" font-size="13" font-weight="bold" font-family="Nunito Sans, sans-serif">{fa_last}</text>'
+        f'<circle cx="280" cy="440" r="6" fill="#666"/><text x="292" y="445" fill="#bbb" font-size="13" font-weight="bold" font-family="Nunito Sans, sans-serif">{fb_last}</text>'
         f'</svg>'
     )
 
@@ -1058,7 +1095,7 @@ def _fetch_fight_detail(fight_url: str) -> dict:
 
 def _render_fight_detail(fight_url: str, selected_fighter: str):
     """Render detailed fight stats inside an expander."""
-    with st.spinner("Loading fight stats..."):
+    with st.spinner("Getting fight ready..."):
         try:
             fd = _fetch_fight_detail(fight_url)
         except Exception as e:
@@ -1275,40 +1312,17 @@ def display_prediction(prediction: dict):
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    # Check for data first
-    data_exists = (
-        os.path.exists(os.path.join("data", "fighters.csv")) and
-        os.path.exists(os.path.join("data", "fights.csv"))
-    )
-
-    if not data_exists:
-        st.markdown(
-            f'<div style="text-align:center;padding:4rem 2rem;">'
-            f'<div style="font-family:{HF};color:{AC};font-size:2rem;letter-spacing:2px;">ADRENALINE</div>'
-            f'<div style="font-family:{BF};color:#555;font-size:0.8rem;letter-spacing:2px;text-transform:uppercase;margin-top:0.5rem;">MATCHUP PREDICTOR</div>'
-            f'<div style="font-family:{BF};color:#888;font-size:1rem;margin-top:2rem;">No cached data found. Run the data collection script first:</div>'
-            f'<div style="background:{CARD_BG};border-radius:12px;padding:1.2rem;margin:1.5rem auto;max-width:400px;font-family:monospace;color:#aaa;font-size:0.85rem;">python collect_data.py</div>'
-            f'<div style="font-family:{BF};color:#555;font-size:0.8rem;">This takes 15-30 minutes to scrape data from UFCStats.com.</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-
-        if st.button("Start Data Collection", type="primary"):
-            with st.spinner("Scraping fighter database... This may take a while."):
-                fighters_df = build_fighter_database(use_cache=False)
-            with st.spinner("Scraping fight history..."):
-                fights_df = build_fight_history_database(use_cache=False)
-            st.success(f"Done! Loaded {len(fighters_df)} fighters and {len(fights_df)} fights.")
-            st.rerun()
-        return
-
-    # Load data
+    # Load data with themed loading screen
+    loading_placeholder = st.empty()
+    with loading_placeholder.container():
+        _loading_screen()
     fighters_df = load_fighters()
     fights_df = load_fights()
     fighters_clean = clean_fighter_data(fighters_df)
 
     # Train model
     predictor = get_trained_model(fighters_df, fights_df)
+    loading_placeholder.empty()
 
     # ── Header bar with stats (bright, right-aligned) ────────────────────────
     acc_str = ""
@@ -1325,6 +1339,29 @@ def main():
 
     st.markdown(f'<div class="header-bar"><div style="display:flex;align-items:center;gap:0.8rem;"><img src="{LOGO_SRC}" style="width:44px;height:44px;object-fit:contain;filter:{LOGO_FILTER};"><div class="brand">ADRENALINE</div></div><div class="header-stats">{stats_inner}</div></div>', unsafe_allow_html=True)
 
+    # ── Update Data button ──────────────────────────────────────────────────
+    with st.expander("Update Data (after a new event)"):
+        st.markdown(
+            f'<div style="font-family:{BF};color:#888;font-size:0.85rem;">'
+            f'Scrapes only the latest events and updates affected fighter stats. Takes 1-2 minutes.</div>',
+            unsafe_allow_html=True,
+        )
+        if st.button("Update Data", type="primary"):
+            status_text = st.empty()
+            def _progress(msg):
+                status_text.markdown(
+                    f'<div style="font-family:{BF};color:{AC};font-size:0.85rem;">{msg}</div>',
+                    unsafe_allow_html=True,
+                )
+            with st.spinner("Warming up the engines..."):
+                result = incremental_update(max_new_events=5, progress_callback=_progress)
+            if result["new_fights"] > 0:
+                st.success(f"Added {result['new_fights']} new fights, updated {result['updated_fighters']} fighters.")
+                st.cache_resource.clear()
+                st.rerun()
+            else:
+                st.info("Already up to date — no new events found.")
+
     # ── Navigation via underline tabs ────────────────────────────────────────
     fighter_names = sorted(fighters_clean["name"].dropna().unique().tolist())
 
@@ -1336,7 +1373,7 @@ def main():
     with tab_fullcard:
         st.markdown('<div class="section-header">Full Card Predictions</div>', unsafe_allow_html=True)
 
-        with st.spinner("Fetching upcoming event..."):
+        with st.spinner("Stepping into the octagon..."):
             try:
                 upcoming_fc = get_upcoming_card()
             except Exception as e:
@@ -1354,7 +1391,7 @@ def main():
                 st.session_state.active_fc = None
 
             if st.button("PREDICT ENTIRE CARD", type="primary", use_container_width=True):
-                with st.spinner("Predicting all fights..."):
+                with st.spinner("Sizing up the competition..."):
                     st.session_state.fc_results = predictor.predict_card(upcoming_fc["fights"])
                     st.session_state.active_fc = 0
                     st.rerun()
@@ -1394,7 +1431,7 @@ def main():
             if fighter_a == fighter_b:
                 st.error("Please select two different fighters.")
             else:
-                with st.spinner("Analyzing matchup..."):
+                with st.spinner("Wrapping the hands..."):
                     try:
                         prediction = predictor.predict_matchup(fighter_a, fighter_b)
                         display_prediction(prediction)
@@ -1521,7 +1558,7 @@ def main():
 
                 fighter_url = f.get("url", "")
                 if fighter_url:
-                    with st.spinner("Loading fight history..."):
+                    with st.spinner("Walking out to the octagon..."):
                         try:
                             details = scrape_fighter_details(fighter_url)
                             history = details.get("fight_history", [])
@@ -1596,7 +1633,7 @@ def main():
     with tab_news:
         st.markdown('<div class="section-header">News</div>', unsafe_allow_html=True)
 
-        with st.spinner("Fetching latest news..."):
+        with st.spinner("Fueling the fire..."):
             articles = fetch_ufc_news(25)
 
         if articles:

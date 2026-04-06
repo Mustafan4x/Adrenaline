@@ -16,6 +16,7 @@ Adrenaline goes beyond simple win/loss guessing. It scrapes real fighter data (s
 - Fighter profile cards with images pulled from UFC.com
 - HTML/CSS visualizations: confidence bars, feature importance, tale of the tape, radar charts, and recent form
 - Style matchup analysis describing how fighting styles interact
+- One-click data updates after new UFC events
 - Dark theme UI with smooth transitions
 
 ## Installation
@@ -40,17 +41,9 @@ Adrenaline goes beyond simple win/loss guessing. It scrapes real fighter data (s
 
 ## Usage
 
-### Step 1: Collect Data
+### Launch Adrenaline
 
-Run the data collection script to scrape fighter stats and fight history from UFCStats.com. This only needs to be done once (data is cached in the `data/` directory):
-
-```bash
-python collect_data.py
-```
-
-This takes roughly 15-30 minutes depending on your connection.
-
-### Step 2: Launch Adrenaline
+Fighter data and fight history are included in the repo, so no setup is needed:
 
 ```bash
 streamlit run app.py
@@ -58,7 +51,11 @@ streamlit run app.py
 
 The app will open at `http://localhost:8501`.
 
-### Step 3: Make Predictions
+### Keeping Data Up to Date
+
+After a new UFC event, click the **Update Data** expander at the top of the app and hit the button. This scrapes only the latest event results and updates affected fighter stats (takes 1-2 minutes).
+
+### Make Predictions
 
 - **Full Card Predictions** -- Predict every fight on the upcoming card at once.
 - **Custom Matchup** -- Select any two fighters from the dropdown menus and click Predict Matchup.
@@ -77,9 +74,10 @@ The app will open at `http://localhost:8501`.
 
 ```
 app.py              - Streamlit web application (UI + HTML visualizations)
-scraper.py          - Data scraper (fighters, fights, upcoming events, fight details)
+scraper.py          - Data scraper (fighters, fights, upcoming events, incremental updates)
 preprocessing.py    - Data cleaning, feature engineering, style classification
 model.py            - XGBoost prediction model with feature importance
-collect_data.py     - One-time data collection script
-data/               - Cached fighter and fight CSVs, image cache, logos
+data/fighters.csv   - Pre-scraped fighter database
+data/fights.csv     - Pre-scraped fight history for model training
+data/logos/         - Branding assets
 ```

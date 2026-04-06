@@ -13,9 +13,13 @@ venv/
 models/*.pkl
 models/*.joblib
 models/*.h5
-data/
-*.csv
+data/image_cache/
+data/upcoming.json
 *.parquet
+
+# Keep scraped CSVs (ship with repo for fast setup)
+!data/fighters.csv
+!data/fights.csv
 
 # Claude Code
 .claude/

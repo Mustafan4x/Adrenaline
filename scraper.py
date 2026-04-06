@@ -426,6 +426,78 @@ def build_fight_history_database(use_cache: bool = True) -> pd.DataFrame:
     return df
 
 
+def incremental_update(max_new_events: int = 5, progress_callback=None) -> dict:
+    """Update CSVs with only recent events and affected fighters.
+
+    Returns dict with counts of new fights and updated fighters.
+    """
+    fighters_path = os.path.join(DATA_DIR, "fighters.csv")
+    fights_path = os.path.join(DATA_DIR, "fights.csv")
+
+    fighters_df = pd.read_csv(fighters_path)
+    fights_df = pd.read_csv(fights_path)
+
+    existing_events = set(fights_df["event"].dropna().unique())
+
+    if progress_callback:
+        progress_callback("Checking for new events...")
+    events = scrape_completed_events(max_events=max_new_events + len(existing_events))
+
+    new_fights = []
+    updated_fighter_names = set()
+    for event in events:
+        if event["name"] in existing_events:
+            continue
+        if progress_callback:
+            progress_callback(f"Scraping {event['name']}...")
+        try:
+            fights = scrape_completed_fight_details(event["url"])
+            for fight in fights:
+                fight["event"] = event["name"]
+                updated_fighter_names.add(fight["fighter_a"])
+                updated_fighter_names.add(fight["fighter_b"])
+            new_fights.extend(fights)
+            time.sleep(0.5)
+        except Exception as e:
+            print(f"  Error scraping event {event['name']}: {e}")
+
+    if new_fights:
+        new_fights_df = pd.DataFrame(new_fights)
+        fights_df = pd.concat([fights_df, new_fights_df], ignore_index=True)
+        fights_df.to_csv(fights_path, index=False)
+
+    # Re-scrape only fighters who fought in new events
+    if updated_fighter_names:
+        if progress_callback:
+            progress_callback(f"Updating {len(updated_fighter_names)} fighters...")
+        existing_urls = dict(zip(fighters_df["name"], fighters_df["url"]))
+        for name in updated_fighter_names:
+            url = existing_urls.get(name)
+            if not url:
+                # Try to find fighter URL from alphabetical listing
+                continue
+            try:
+                details = scrape_fighter_details(url)
+                details.pop("fight_history", None)
+                # Update existing row or append
+                mask = fighters_df["name"] == name
+                if mask.any():
+                    for col, val in details.items():
+                        fighters_df.loc[mask, col] = val
+                else:
+                    fighters_df = pd.concat([fighters_df, pd.DataFrame([details])], ignore_index=True)
+                time.sleep(0.3)
+            except Exception as e:
+                print(f"  Error updating {name}: {e}")
+        fighters_df.to_csv(fighters_path, index=False)
+
+    return {
+        "new_fights": len(new_fights),
+        "updated_fighters": len(updated_fighter_names),
+        "new_events": [f["event"] for f in new_fights[:1]]  # just first for display
+    }
+
+
 def get_upcoming_card() -> list[dict]:
     """Get the next upcoming UFC event card."""
     cache_path = os.path.join(DATA_DIR, "upcoming.json")
