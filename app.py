@@ -41,9 +41,24 @@ HF = "'Russo One', sans-serif"
 BF = "'Nunito Sans', sans-serif"
 AC = "#d32f2f"
 AC_DARK = "#b71c1c"
-BG = "#0d0d0d"
-CARD_BG = "#111"
-INNER_BG = "#161616"
+
+# Theme palettes
+DARK_THEME = {
+    "BG": "#0d0d0d", "CARD_BG": "#111", "INNER_BG": "#161616",
+    "TEXT": "#e0e0e0", "TEXT_DIM": "#999", "TEXT_MUTED": "#555",
+    "BORDER": "#1a1a1a", "BORDER_HOVER": "#333",
+    "INITIALS_BG": "#1a1a1a", "INITIALS_BORDER": "#333",
+    "REASON_BG": "rgba(100,100,100,0.1)", "TABLE_HOVER": "rgba(211,47,47,0.03)",
+    "GRADIENT_END": "rgba(211,47,47,0.06)",
+}
+LIGHT_THEME = {
+    "BG": "#f5f5f5", "CARD_BG": "#ffffff", "INNER_BG": "#eaeaea",
+    "TEXT": "#1a1a1a", "TEXT_DIM": "#1a1a1a", "TEXT_MUTED": "#1a1a1a",
+    "BORDER": "#ddd", "BORDER_HOVER": "#aaa",
+    "INITIALS_BG": "#e0e0e0", "INITIALS_BORDER": "#bbb",
+    "REASON_BG": "rgba(100,100,100,0.06)", "TABLE_HOVER": "rgba(211,47,47,0.05)",
+    "GRADIENT_END": "rgba(211,47,47,0.08)",
+}
 
 IMAGE_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "image_cache")
 os.makedirs(IMAGE_CACHE_DIR, exist_ok=True)
@@ -80,7 +95,7 @@ def _loading_screen(text: str | None = None):
         f'filter:{LOGO_FILTER};margin-bottom:1.5rem;'
         f'animation:pulse 1.5s ease-in-out infinite;" />'
         f'<div style="font-family:{HF};color:{AC};font-size:1.6rem;letter-spacing:2px;">ADRENALINE</div>'
-        f'<div style="font-family:{BF};color:#888;font-size:1rem;margin-top:0.8rem;letter-spacing:1px;">{saying}</div>'
+        f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:1rem;margin-top:0.8rem;letter-spacing:1px;">{saying}</div>'
         f'</div>'
         f'<style>@keyframes pulse {{ 0%,100% {{ opacity:1; }} 50% {{ opacity:0.4; }} }}</style>',
         unsafe_allow_html=True,
@@ -92,6 +107,17 @@ st.set_page_config(
     page_icon=LOGO_PATH,
     layout="wide",
     initial_sidebar_state="collapsed",
+)
+
+# ── Theme state ──────────────────────────────────────────────────────────────
+if "theme" not in st.session_state:
+    st.session_state.theme = "dark"
+T = DARK_THEME if st.session_state.theme == "dark" else LIGHT_THEME
+BG = T["BG"]; CARD_BG = T["CARD_BG"]; INNER_BG = T["INNER_BG"]
+LOGO_FILTER = (
+    "drop-shadow(0 0 4px rgba(211,47,47,0.5)) drop-shadow(0 0 10px rgba(211,47,47,0.2))"
+    if st.session_state.theme == "dark"
+    else "drop-shadow(0 0 0 #000) drop-shadow(0 0 0 #000) drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000) drop-shadow(0 0 4px rgba(0,0,0,0.15))"
 )
 
 # ── CSS ──────────────────────────────────────────────────────────────────────
@@ -108,7 +134,7 @@ st.markdown(f"""
     /* Global */
     .stApp {{
         background-color: {BG};
-        color: #e0e0e0;
+        color: {T["TEXT"]};
         font-family: {BF};
     }}
 
@@ -131,7 +157,6 @@ st.markdown(f"""
 
     /* Hide chrome */
     #MainMenu, footer, header {{ visibility: hidden; }}
-    section[data-testid="stSidebar"] {{ display: none; }}
 
     /* Header bar with stats */
     .header-bar {{
@@ -139,7 +164,7 @@ st.markdown(f"""
         justify-content: space-between;
         align-items: center;
         padding: 1rem 1.5rem;
-        border-bottom: 1px solid #1a1a1a;
+        border-bottom: 1px solid {T["BORDER"]};
         margin-bottom: 0.5rem;
     }}
     .header-bar .brand {{
@@ -157,12 +182,12 @@ st.markdown(f"""
         font-family: {BF};
     }}
     .header-stats .h-stat .h-num {{
-        color: #e0e0e0;
+        color: {T["TEXT"]};
         font-size: 0.8rem;
         font-weight: 700;
     }}
     .header-stats .h-stat .h-label {{
-        color: #777;
+        color: {T["TEXT_MUTED"]};
         font-size: 0.65rem;
         letter-spacing: 1px;
         text-transform: uppercase;
@@ -171,20 +196,20 @@ st.markdown(f"""
     .header-stats .h-divider {{
         width: 1px;
         height: 20px;
-        background: #333;
+        background: {T["BORDER_HOVER"]};
     }}
 
     /* Underline tab navigation */
     .stTabs [data-baseweb="tab-list"] {{
         gap: 2rem;
         background: transparent;
-        border-bottom: 1px solid #1a1a1a;
+        border-bottom: 1px solid {T["BORDER"]};
         padding: 0;
         justify-content: center;
     }}
     .stTabs [data-baseweb="tab"] {{
         font-family: {BF};
-        color: #555;
+        color: {T["TEXT_MUTED"]};
         font-weight: 600;
         letter-spacing: 1.5px;
         text-transform: uppercase;
@@ -212,7 +237,7 @@ st.markdown(f"""
         overflow: hidden;
         position: relative;
         min-height: 280px;
-        background: linear-gradient(135deg, #111 0%, #0a0a0a 60%, rgba(211,47,47,0.06) 100%);
+        background: linear-gradient(135deg, {CARD_BG} 0%, {BG} 60%, {T["GRADIENT_END"]} 100%);
     }}
     .fighter-bg-card img.fighter-photo {{
         position: absolute;
@@ -230,14 +255,14 @@ st.markdown(f"""
     }}
     .fighter-bg-card .f-weight {{
         font-family: {BF};
-        color: #666;
+        color: {T["TEXT_MUTED"]};
         font-size: 0.6rem;
         letter-spacing: 3px;
         text-transform: uppercase;
     }}
     .fighter-bg-card .f-last {{
         font-family: {HF};
-        color: #fff;
+        color: {T["TEXT"]};
         font-size: 2.4rem;
         text-transform: uppercase;
         margin: 0.3rem 0;
@@ -245,7 +270,7 @@ st.markdown(f"""
     }}
     .fighter-bg-card .f-first {{
         font-family: {HF};
-        color: rgba(255,255,255,0.3);
+        color: {"rgba(255,255,255,0.3)" if st.session_state.theme == "dark" else "rgba(0,0,0,0.3)"};
         font-size: 1.1rem;
         text-transform: uppercase;
         letter-spacing: 2px;
@@ -259,7 +284,7 @@ st.markdown(f"""
     }}
     .fighter-bg-card .f-record-label {{
         font-family: {BF};
-        color: #555;
+        color: {T["TEXT_MUTED"]};
         font-size: 0.55rem;
         letter-spacing: 2px;
         text-transform: uppercase;
@@ -271,13 +296,13 @@ st.markdown(f"""
     }}
     .fighter-bg-card .f-stat-val {{
         font-family: {BF};
-        color: #e0e0e0;
+        color: {T["TEXT"]};
         font-size: 1rem;
         font-weight: 700;
     }}
     .fighter-bg-card .f-stat-lbl {{
         font-family: {BF};
-        color: #555;
+        color: {T["TEXT_MUTED"]};
         font-size: 0.55rem;
         letter-spacing: 1px;
     }}
@@ -291,8 +316,8 @@ st.markdown(f"""
         width: 120px;
         height: 120px;
         border-radius: 50%;
-        background: #1a1a1a;
-        border: 2px solid #333;
+        background: {T["INITIALS_BG"]};
+        border: 2px solid {T["INITIALS_BORDER"]};
         display: flex;
         align-items: center;
         justify-content: center;
@@ -308,16 +333,16 @@ st.markdown(f"""
         font-weight: 700;
         letter-spacing: 3px;
         text-transform: uppercase;
-        color: #555;
+        color: {T["TEXT_MUTED"]};
         margin: 2rem 0 1rem 0;
         padding-bottom: 0.5rem;
-        border-bottom: 1px solid #1a1a1a;
+        border-bottom: 1px solid {T["BORDER"]};
     }}
 
-    /* Ghost button overrides */
+    /* Primary button overrides */
     .stButton > button[kind="primary"] {{
-        background-color: transparent !important;
-        color: {AC} !important;
+        background-color: {AC} !important;
+        color: #fff !important;
         border: 2px solid {AC} !important;
         border-radius: 8px !important;
         padding: 0.9rem 2.5rem !important;
@@ -329,13 +354,14 @@ st.markdown(f"""
         transition: all 0.2s ease !important;
     }}
     .stButton > button[kind="primary"]:hover {{
-        background-color: {AC} !important;
-        color: white !important;
+        background-color: {AC_DARK} !important;
+        border-color: {AC_DARK} !important;
+        color: #fff !important;
     }}
     .stButton > button {{
         background-color: transparent !important;
-        color: #666 !important;
-        border: 1px solid #333 !important;
+        color: {T["TEXT_MUTED"]} !important;
+        border: 1px solid {T["BORDER_HOVER"]} !important;
         border-radius: 8px !important;
         font-family: {BF} !important;
         font-weight: 600 !important;
@@ -344,8 +370,8 @@ st.markdown(f"""
         font-size: 0.75rem !important;
     }}
     .stButton > button:hover {{
-        color: #e0e0e0 !important;
-        border-color: #666 !important;
+        color: {T["TEXT"]} !important;
+        border-color: {T["TEXT_MUTED"]} !important;
     }}
 
     /* Winner - Side Highlight */
@@ -365,7 +391,7 @@ st.markdown(f"""
         background: linear-gradient(135deg, {AC}, {AC_DARK});
     }}
     .winner-side.lose {{
-        background: {INNER_BG};
+        background: {T["INNER_BG"]};
     }}
     .winner-label {{
         font-family: {BF};
@@ -374,7 +400,7 @@ st.markdown(f"""
         text-transform: uppercase;
     }}
     .winner-label.win {{ color: rgba(255,255,255,0.7); }}
-    .winner-label.lose {{ color: #555; }}
+    .winner-label.lose {{ color: {T["TEXT_MUTED"]}; }}
     .winner-name {{
         font-family: {HF};
         font-size: 2rem;
@@ -383,14 +409,14 @@ st.markdown(f"""
         margin: 0.3rem 0;
     }}
     .winner-name.win {{ color: #fff; }}
-    .winner-name.lose {{ color: #555; }}
+    .winner-name.lose {{ color: {T["TEXT_MUTED"]}; }}
     .winner-conf {{
         font-family: {BF};
         font-size: 0.9rem;
         font-weight: 600;
     }}
     .winner-conf.win {{ color: rgba(255,255,255,0.85); }}
-    .winner-conf.lose {{ color: #444; }}
+    .winner-conf.lose {{ color: {T["TEXT_MUTED"]}; }}
 
     /* Style matchup box */
     .style-matchup {{
@@ -402,31 +428,31 @@ st.markdown(f"""
     .style-matchup .style-title {{
         font-family: {BF};
         font-size: 0.65rem;
-        color: #555;
+        color: {T["TEXT_MUTED"]};
         letter-spacing: 2px;
         text-transform: uppercase;
         margin-bottom: 0.5rem;
     }}
     .style-matchup .style-body {{
         font-family: {BF};
-        color: #999;
+        color: {T["TEXT_DIM"]};
         font-size: 0.85rem;
         line-height: 1.6;
     }}
 
     /* Reason boxes - gradient glow */
     .reason-box {{
-        background: linear-gradient(90deg, rgba(211,47,47,0.12) 0%, #1a1a1a 15%);
+        background: linear-gradient(90deg, rgba(211,47,47,0.12) 0%, {T["BORDER"]} 15%);
         padding: 0.9rem 1.2rem;
         border-radius: 10px;
         margin: 0.4rem 0;
         font-family: {BF};
-        color: #bbb;
+        color: {T["TEXT_DIM"]};
         font-size: 0.85rem;
         line-height: 1.5;
     }}
     .reason-box.against {{
-        background: linear-gradient(90deg, rgba(100,100,100,0.1) 0%, #1a1a1a 15%);
+        background: linear-gradient(90deg, {T["REASON_BG"]} 0%, {T["BORDER"]} 15%);
     }}
 
     /* Fight card table (VS aligned) */
@@ -438,13 +464,13 @@ st.markdown(f"""
     .fight-table-row {{
         display: grid;
         grid-template-columns: 1fr auto 1fr;
-        border-bottom: 1px solid #1a1a1a;
+        border-bottom: 1px solid {T["BORDER"]};
     }}
     .fight-table-row:last-child {{
         border-bottom: none;
     }}
     .fight-table-row:hover {{
-        background: rgba(211,47,47,0.03);
+        background: {T["TABLE_HOVER"]};
     }}
     .ft-left {{
         padding: 1rem 1.5rem;
@@ -452,19 +478,19 @@ st.markdown(f"""
     }}
     .ft-left .ft-name {{
         font-family: {HF};
-        color: #e0e0e0;
+        color: {T["TEXT"]};
         font-size: 1rem;
         text-transform: uppercase;
     }}
     .ft-left .ft-record {{
         font-family: {BF};
-        color: #555;
+        color: {T["TEXT_MUTED"]};
         font-size: 0.6rem;
         letter-spacing: 1px;
     }}
     .ft-center {{
         width: 1px;
-        background: #1a1a1a;
+        background: {T["BORDER"]};
         position: relative;
         display: flex;
         align-items: center;
@@ -482,13 +508,13 @@ st.markdown(f"""
     }}
     .ft-right .ft-name {{
         font-family: {HF};
-        color: #e0e0e0;
+        color: {T["TEXT"]};
         font-size: 1rem;
         text-transform: uppercase;
     }}
     .ft-right .ft-record {{
         font-family: {BF};
-        color: #555;
+        color: {T["TEXT_MUTED"]};
         font-size: 0.6rem;
         letter-spacing: 1px;
     }}
@@ -502,13 +528,13 @@ st.markdown(f"""
         font-family: {HF};
         font-size: 1.8rem;
         text-transform: uppercase;
-        color: #fff;
+        color: {T["TEXT"]};
         letter-spacing: 2px;
     }}
     .event-header .event-detail {{
         font-family: {BF};
         font-size: 0.7rem;
-        color: #555;
+        color: {T["TEXT_MUTED"]};
         letter-spacing: 2px;
         text-transform: uppercase;
         margin-top: 0.3rem;
@@ -516,13 +542,13 @@ st.markdown(f"""
 
     /* Visualization tabs (inside predictions) */
     .stTabs .stTabs [data-baseweb="tab-list"] {{
-        border-bottom: 1px solid #1a1a1a;
+        border-bottom: 1px solid {T["BORDER"]};
     }}
 
     /* Selectbox */
     .stSelectbox label {{
         font-family: {BF} !important;
-        color: #555 !important;
+        color: {T["TEXT_MUTED"]} !important;
         font-weight: 700;
         letter-spacing: 1.5px;
         text-transform: uppercase;
@@ -544,11 +570,11 @@ st.markdown(f"""
         text-transform: uppercase !important;
         letter-spacing: 0.5px !important;
         font-size: 0.85rem !important;
-        color: #e0e0e0 !important;
+        color: {T["TEXT"]} !important;
     }}
     [data-testid="stExpander"] {{
         background: {CARD_BG};
-        border: 1px solid #1a1a1a;
+        border: 1px solid {T["BORDER"]};
         border-radius: 14px;
         margin-bottom: 0.5rem;
         overflow: hidden;
@@ -566,11 +592,43 @@ st.markdown(f"""
     }}
 
     hr {{
-        border-color: #1a1a1a;
+        border-color: {T["BORDER"]};
     }}
 
     .stAlert {{
         border-radius: 12px;
+    }}
+
+    /* Segmented pill radio (theme switcher) */
+    div[data-testid="stRadio"] > div {{
+        display: inline-flex !important;
+        background: {T["BORDER"]} !important;
+        border-radius: 8px !important;
+        overflow: hidden !important;
+        border: 1px solid {T["BORDER_HOVER"]} !important;
+        gap: 0 !important;
+    }}
+    div[data-testid="stRadio"] > div > label {{
+        padding: 0.45rem 1.2rem !important;
+        font-family: {BF} !important;
+        font-size: 0.7rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 1.5px !important;
+        text-transform: uppercase !important;
+        color: {T["TEXT_MUTED"]} !important;
+        cursor: pointer !important;
+        transition: all 0.2s !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+    }}
+    div[data-testid="stRadio"] > div > label[data-checked="true"],
+    div[data-testid="stRadio"] > div > label:has(input:checked) {{
+        background: {AC} !important;
+        color: #fff !important;
+    }}
+    div[data-testid="stRadio"] > div > label > div:first-child {{
+        display: none !important;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -810,7 +868,7 @@ def _render_confidence(prediction: dict):
         # Names + percentages row
         f'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.6rem;">'
         f'<div><span style="font-family:{HF};color:#fff;font-size:1.1rem;text-transform:uppercase;">{fa_last}</span><span style="font-family:{BF};color:{AC};font-size:1.1rem;font-weight:800;margin-left:0.6rem;">{prob_a:.1f}%</span></div>'
-        f'<div><span style="font-family:{BF};color:#888;font-size:1.1rem;font-weight:800;margin-right:0.6rem;">{prob_b:.1f}%</span><span style="font-family:{HF};color:#888;font-size:1.1rem;text-transform:uppercase;">{fb_last}</span></div>'
+        f'<div><span style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:1.1rem;font-weight:800;margin-right:0.6rem;">{prob_b:.1f}%</span><span style="font-family:{HF};color:{T["TEXT_MUTED"]};font-size:1.1rem;text-transform:uppercase;">{fb_last}</span></div>'
         f'</div>'
         # Bar
         f'<div style="display:flex;border-radius:6px;overflow:hidden;height:28px;">'
@@ -856,9 +914,9 @@ def _render_feature_importance(prediction: dict):
         color = AC if favors == fa_name else "#666" if favors == fb_name else "#333"
         favor_label = fa_name.split()[-1] if favors == fa_name else fb_name.split()[-1] if favors == fb_name else "Even"
         rows.append(
-            f'<div style="display:flex;align-items:center;gap:0.8rem;padding:0.55rem 0;border-bottom:1px solid #1a1a1a;">'
-            f'<div style="width:140px;flex-shrink:0;font-family:{BF};color:#bbb;font-size:0.85rem;text-align:right;">{display_name}</div>'
-            f'<div style="flex:1;background:#1a1a1a;border-radius:4px;height:26px;overflow:hidden;">'
+            f'<div style="display:flex;align-items:center;gap:0.8rem;padding:0.55rem 0;border-bottom:1px solid {T["BORDER"]};">'
+            f'<div style="width:140px;flex-shrink:0;font-family:{BF};color:{T["TEXT_DIM"]};font-size:0.85rem;text-align:right;">{display_name}</div>'
+            f'<div style="flex:1;background:{T["BORDER"]};border-radius:4px;height:26px;overflow:hidden;">'
             f'<div style="width:{pct:.1f}%;height:100%;background:{color};border-radius:4px;transition:width 0.6s ease;"></div></div>'
             f'<div style="width:80px;flex-shrink:0;font-family:{BF};color:{color};font-size:0.8rem;font-weight:700;letter-spacing:0.5px;">{favor_label}</div>'
             f'</div>'
@@ -866,8 +924,8 @@ def _render_feature_importance(prediction: dict):
 
     legend = (
         f'<div style="display:flex;gap:1.5rem;margin-bottom:1rem;">'
-        f'<div style="display:flex;align-items:center;gap:0.4rem;"><div style="width:10px;height:10px;border-radius:2px;background:{AC};"></div><span style="font-family:{BF};color:#bbb;font-size:0.8rem;">Favors {fa_name}</span></div>'
-        f'<div style="display:flex;align-items:center;gap:0.4rem;"><div style="width:10px;height:10px;border-radius:2px;background:#666;"></div><span style="font-family:{BF};color:#bbb;font-size:0.8rem;">Favors {fb_name}</span></div>'
+        f'<div style="display:flex;align-items:center;gap:0.4rem;"><div style="width:10px;height:10px;border-radius:2px;background:{AC};"></div><span style="font-family:{BF};color:{T["TEXT_DIM"]};font-size:0.8rem;">Favors {fa_name}</span></div>'
+        f'<div style="display:flex;align-items:center;gap:0.4rem;"><div style="width:10px;height:10px;border-radius:2px;background:#666;"></div><span style="font-family:{BF};color:{T["TEXT_DIM"]};font-size:0.8rem;">Favors {fb_name}</span></div>'
         f'</div>'
     )
 
@@ -912,10 +970,10 @@ def _render_tale_of_tape(prediction: dict):
         val_color_a = AC if a_wins else "#888"
         val_color_b = AC if b_wins else "#888"
         rows.append(
-            f'<div style="display:grid;grid-template-columns:65px 1fr 110px 1fr 65px;align-items:center;gap:0.5rem;padding:0.55rem 0;border-bottom:1px solid #1a1a1a;">'
+            f'<div style="display:grid;grid-template-columns:65px 1fr 110px 1fr 65px;align-items:center;gap:0.5rem;padding:0.55rem 0;border-bottom:1px solid {T["BORDER"]};">'
             f'<div style="font-family:{BF};color:{val_color_a};font-size:0.9rem;font-weight:700;text-align:right;">{va:.1f}</div>'
             f'<div style="display:flex;justify-content:flex-end;"><div style="width:{pct_a:.0f}%;height:20px;background:{color_a};border-radius:3px 0 0 3px;min-width:2px;transition:width 0.6s ease;"></div></div>'
-            f'<div style="font-family:{BF};color:#888;font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;text-align:center;">{label}</div>'
+            f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;text-align:center;">{label}</div>'
             f'<div><div style="width:{pct_b:.0f}%;height:20px;background:{color_b};border-radius:0 3px 3px 0;min-width:2px;transition:width 0.6s ease;"></div></div>'
             f'<div style="font-family:{BF};color:{val_color_b};font-size:0.9rem;font-weight:700;">{vb:.1f}</div>'
             f'</div>'
@@ -928,9 +986,9 @@ def _render_tale_of_tape(prediction: dict):
         f'<div style="background:{CARD_BG};border-radius:16px;padding:1.5rem;margin:0.5rem 0;">'
         f'<div style="font-family:{BF};color:{AC};font-size:0.75rem;letter-spacing:3px;text-transform:uppercase;margin-bottom:1rem;">TALE OF THE TAPE</div>'
         f'<div style="display:grid;grid-template-columns:65px 1fr 110px 1fr 65px;gap:0.5rem;margin-bottom:0.8rem;">'
-        f'<div></div><div style="font-family:{HF};color:#e0e0e0;font-size:1rem;text-align:right;text-transform:uppercase;">{fa_last}</div>'
+        f'<div></div><div style="font-family:{HF};color:{T["TEXT"]};font-size:1rem;text-align:right;text-transform:uppercase;">{fa_last}</div>'
         f'<div></div>'
-        f'<div style="font-family:{HF};color:#e0e0e0;font-size:1rem;text-transform:uppercase;">{fb_last}</div><div></div>'
+        f'<div style="font-family:{HF};color:{T["TEXT"]};font-size:1rem;text-transform:uppercase;">{fb_last}</div><div></div>'
         f'</div>{"".join(rows)}</div>',
         unsafe_allow_html=True,
     )
@@ -971,12 +1029,12 @@ def _render_radar_chart(prediction: dict):
     grid_svg = ""
     for level in [0.25, 0.5, 0.75, 1.0]:
         pts = " ".join(f"{polar_point(i, level)[0]:.1f},{polar_point(i, level)[1]:.1f}" for i in range(n))
-        grid_svg += f'<polygon points="{pts}" fill="none" stroke="#1a1a1a" stroke-width="1"/>'
+        grid_svg += f'<polygon points="{pts}" fill="none" stroke="{T["BORDER"]}" stroke-width="1"/>'
 
     # Grid spokes
     for i in range(n):
         x, y = polar_point(i, 1.0)
-        grid_svg += f'<line x1="{cx}" y1="{cy}" x2="{x:.1f}" y2="{y:.1f}" stroke="#1a1a1a" stroke-width="1"/>'
+        grid_svg += f'<line x1="{cx}" y1="{cy}" x2="{x:.1f}" y2="{y:.1f}" stroke="{T["BORDER"]}" stroke-width="1"/>'
 
     # Data polygons
     pts_a = " ".join(f"{polar_point(i, vals_a[i])[0]:.1f},{polar_point(i, vals_a[i])[1]:.1f}" for i in range(n))
@@ -993,11 +1051,11 @@ def _render_radar_chart(prediction: dict):
             anchor = "start"
         lines = lbl.split("\n")
         if len(lines) == 1:
-            label_svg += f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="{anchor}" dominant-baseline="middle" fill="#bbb" font-size="13" font-family="Nunito Sans, sans-serif">{lbl}</text>'
+            label_svg += f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="{anchor}" dominant-baseline="middle" fill="{T['TEXT_DIM']}" font-size="13" font-family="Nunito Sans, sans-serif">{lbl}</text>'
         else:
             y_start = y - 7 * (len(lines) - 1)
             tspans = "".join(f'<tspan x="{x:.1f}" dy="{"0" if j == 0 else "14"}">{line}</tspan>' for j, line in enumerate(lines))
-            label_svg += f'<text text-anchor="{anchor}" dominant-baseline="middle" fill="#bbb" font-size="13" font-family="Nunito Sans, sans-serif" y="{y_start:.1f}">{tspans}</text>'
+            label_svg += f'<text text-anchor="{anchor}" dominant-baseline="middle" fill="{T['TEXT_DIM']}" font-size="13" font-family="Nunito Sans, sans-serif" y="{y_start:.1f}">{tspans}</text>'
 
     # Dots
     dots_a = "".join(f'<circle cx="{polar_point(i, vals_a[i])[0]:.1f}" cy="{polar_point(i, vals_a[i])[1]:.1f}" r="4" fill="{AC}"/>' for i in range(n))
@@ -1013,8 +1071,8 @@ def _render_radar_chart(prediction: dict):
         f'<polygon points="{pts_b}" fill="#666" fill-opacity="0.1" stroke="#666" stroke-width="2"/>'
         f'{dots_a}{dots_b}'
         f'{label_svg}'
-        f'<circle cx="180" cy="440" r="6" fill="{AC}"/><text x="192" y="445" fill="#bbb" font-size="13" font-weight="bold" font-family="Nunito Sans, sans-serif">{fa_last}</text>'
-        f'<circle cx="280" cy="440" r="6" fill="#666"/><text x="292" y="445" fill="#bbb" font-size="13" font-weight="bold" font-family="Nunito Sans, sans-serif">{fb_last}</text>'
+        f'<circle cx="180" cy="440" r="6" fill="{AC}"/><text x="192" y="445" fill="{T['TEXT_DIM']}" font-size="13" font-weight="bold" font-family="Nunito Sans, sans-serif">{fa_last}</text>'
+        f'<circle cx="280" cy="440" r="6" fill="#666"/><text x="292" y="445" fill="{T['TEXT_DIM']}" font-size="13" font-weight="bold" font-family="Nunito Sans, sans-serif">{fb_last}</text>'
         f'</svg>'
     )
 
@@ -1061,9 +1119,9 @@ def _render_historical_trends(prediction: dict):
         return (
             f'<div style="flex:1;background:{CARD_BG};border-radius:16px;padding:1.5rem;">'
             f'<div style="font-family:{HF};color:{color};font-size:1.2rem;text-transform:uppercase;margin-bottom:0.3rem;">{name}</div>'
-            f'<div style="font-family:{BF};color:#888;font-size:0.85rem;margin-bottom:1rem;">{record}</div>'
+            f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.85rem;margin-bottom:1rem;">{record}</div>'
             f'<div style="display:flex;gap:0.6rem;align-items:center;">{dots}</div>'
-            f'<div style="font-family:{BF};color:#888;font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;margin-top:0.8rem;">LAST {len(form)} FIGHTS</div>'
+            f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;margin-top:0.8rem;">LAST {len(form)} FIGHTS</div>'
             f'</div>'
         )
 
@@ -1113,10 +1171,10 @@ def _render_fight_detail(fight_url: str, selected_fighter: str):
     st.markdown(
         f'<div style="background:{CARD_BG};border-radius:12px;padding:1.2rem;margin-bottom:0.8rem;">'
         f'<div style="display:flex;justify-content:space-between;align-items:center;">'
-        f'<div style="font-family:{HF};color:#e0e0e0;font-size:1.1rem;text-transform:uppercase;">{fa} vs {fb}</div>'
-        f'<div style="font-family:{BF};color:#888;font-size:0.8rem;">R{rnd} {time}</div></div>'
-        f'<div style="font-family:{BF};color:#888;font-size:0.8rem;margin-top:0.4rem;">{method}</div>'
-        f'<div style="font-family:{BF};color:#555;font-size:0.75rem;margin-top:0.2rem;">Referee: {referee}</div>'
+        f'<div style="font-family:{HF};color:{T["TEXT"]};font-size:1.1rem;text-transform:uppercase;">{fa} vs {fb}</div>'
+        f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.8rem;">R{rnd} {time}</div></div>'
+        f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.8rem;margin-top:0.4rem;">{method}</div>'
+        f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.75rem;margin-top:0.2rem;">Referee: {referee}</div>'
         f'</div>',
         unsafe_allow_html=True,
     )
@@ -1154,18 +1212,18 @@ def _render_fight_detail(fight_url: str, selected_fighter: str):
     # Stat comparison table
     def compare_row(label, val_a, val_b):
         return (
-            f'<div style="display:grid;grid-template-columns:1fr 120px 1fr;align-items:center;padding:0.5rem 0;border-bottom:1px solid #1a1a1a;">'
-            f'<div style="font-family:{BF};color:#e0e0e0;font-size:0.9rem;font-weight:700;text-align:right;">{val_a}</div>'
-            f'<div style="font-family:{BF};color:#888;font-size:0.75rem;text-align:center;text-transform:uppercase;letter-spacing:1px;">{label}</div>'
-            f'<div style="font-family:{BF};color:#e0e0e0;font-size:0.9rem;font-weight:700;">{val_b}</div></div>'
+            f'<div style="display:grid;grid-template-columns:1fr 120px 1fr;align-items:center;padding:0.5rem 0;border-bottom:1px solid {T["BORDER"]};">'
+            f'<div style="font-family:{BF};color:{T["TEXT"]};font-size:0.9rem;font-weight:700;text-align:right;">{val_a}</div>'
+            f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.75rem;text-align:center;text-transform:uppercase;letter-spacing:1px;">{label}</div>'
+            f'<div style="font-family:{BF};color:{T["TEXT"]};font-size:0.9rem;font-weight:700;">{val_b}</div></div>'
         )
 
     # Header row with fighter names
     stat_header = (
         f'<div style="display:grid;grid-template-columns:1fr 120px 1fr;align-items:center;padding:0.6rem 0;border-bottom:1px solid #333;">'
         f'<div style="font-family:{HF};color:{AC};font-size:0.9rem;text-align:right;text-transform:uppercase;">{fa}</div>'
-        f'<div style="font-family:{BF};color:#555;font-size:0.7rem;text-align:center;letter-spacing:2px;">STAT</div>'
-        f'<div style="font-family:{HF};color:#888;font-size:0.9rem;text-transform:uppercase;">{fb}</div></div>'
+        f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.7rem;text-align:center;letter-spacing:2px;">STAT</div>'
+        f'<div style="font-family:{HF};color:{T["TEXT_MUTED"]};font-size:0.9rem;text-transform:uppercase;">{fb}</div></div>'
     )
 
     stat_rows = stat_header
@@ -1200,15 +1258,15 @@ def _render_fight_detail(fight_url: str, selected_fighter: str):
             pct_b = (landed_b / max_landed) * 100
             return (
                 f'<div style="margin-bottom:0.8rem;">'
-                f'<div style="font-family:{BF};color:#888;font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;margin-bottom:0.4rem;">{label}</div>'
+                f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;margin-bottom:0.4rem;">{label}</div>'
                 f'<div style="display:grid;grid-template-columns:1fr 10px 1fr;gap:0.3rem;align-items:center;">'
                 f'<div style="display:flex;align-items:center;gap:0.5rem;justify-content:flex-end;">'
-                f'<span style="font-family:{BF};color:#e0e0e0;font-size:0.8rem;font-weight:700;">{val_a_str}</span>'
+                f'<span style="font-family:{BF};color:{T["TEXT"]};font-size:0.8rem;font-weight:700;">{val_a_str}</span>'
                 f'<div style="width:{pct_a:.0f}%;max-width:100%;height:16px;background:{AC};border-radius:3px 0 0 3px;min-width:2px;"></div></div>'
                 f'<div></div>'
                 f'<div style="display:flex;align-items:center;gap:0.5rem;">'
                 f'<div style="width:{pct_b:.0f}%;max-width:100%;height:16px;background:#555;border-radius:0 3px 3px 0;min-width:2px;"></div>'
-                f'<span style="font-family:{BF};color:#e0e0e0;font-size:0.8rem;font-weight:700;">{val_b_str}</span></div>'
+                f'<span style="font-family:{BF};color:{T["TEXT"]};font-size:0.8rem;font-weight:700;">{val_b_str}</span></div>'
                 f'</div></div>'
             )
 
@@ -1240,16 +1298,16 @@ def _render_fight_detail(fight_url: str, selected_fighter: str):
             st.markdown(
                 f'<div style="background:{CARD_BG};border-radius:10px;padding:1rem 1.2rem;margin-bottom:0.4rem;">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">'
-                f'<span style="font-family:{HF};color:#e0e0e0;font-size:0.85rem;">ROUND {ri}</span>'
-                f'<span style="font-family:{BF};color:#555;font-size:0.75rem;">KD: {r_kd_a}-{r_kd_b} | TD: {r_td_a} vs {r_td_b} | Ctrl: {r_ctrl_a} vs {r_ctrl_b}</span></div>'
+                f'<span style="font-family:{HF};color:{T["TEXT"]};font-size:0.85rem;">ROUND {ri}</span>'
+                f'<span style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.75rem;">KD: {r_kd_a}-{r_kd_b} | TD: {r_td_a} vs {r_td_b} | Ctrl: {r_ctrl_a} vs {r_ctrl_b}</span></div>'
                 f'<div style="display:grid;grid-template-columns:1fr 10px 1fr;gap:0.3rem;align-items:center;">'
                 f'<div style="display:flex;align-items:center;gap:0.5rem;justify-content:flex-end;">'
-                f'<span style="font-family:{BF};color:#e0e0e0;font-size:0.8rem;font-weight:700;">{r_sig_a}</span>'
+                f'<span style="font-family:{BF};color:{T["TEXT"]};font-size:0.8rem;font-weight:700;">{r_sig_a}</span>'
                 f'<div style="width:{bar_a:.0f}%;max-width:100%;height:14px;background:{AC};border-radius:3px 0 0 3px;min-width:2px;"></div></div>'
                 f'<div></div>'
                 f'<div style="display:flex;align-items:center;gap:0.5rem;">'
                 f'<div style="width:{bar_b:.0f}%;max-width:100%;height:14px;background:#555;border-radius:0 3px 3px 0;min-width:2px;"></div>'
-                f'<span style="font-family:{BF};color:#e0e0e0;font-size:0.8rem;font-weight:700;">{r_sig_b}</span></div>'
+                f'<span style="font-family:{BF};color:{T["TEXT"]};font-size:0.8rem;font-weight:700;">{r_sig_b}</span></div>'
                 f'</div></div>',
                 unsafe_allow_html=True,
             )
@@ -1339,34 +1397,11 @@ def main():
 
     st.markdown(f'<div class="header-bar"><div style="display:flex;align-items:center;gap:0.8rem;"><img src="{LOGO_SRC}" style="width:44px;height:44px;object-fit:contain;filter:{LOGO_FILTER};"><div class="brand">ADRENALINE</div></div><div class="header-stats">{stats_inner}</div></div>', unsafe_allow_html=True)
 
-    # ── Update Data button ──────────────────────────────────────────────────
-    with st.expander("Update Data (after a new event)"):
-        st.markdown(
-            f'<div style="font-family:{BF};color:#888;font-size:0.85rem;">'
-            f'Scrapes only the latest events and updates affected fighter stats. Takes 1-2 minutes.</div>',
-            unsafe_allow_html=True,
-        )
-        if st.button("Update Data", type="primary"):
-            status_text = st.empty()
-            def _progress(msg):
-                status_text.markdown(
-                    f'<div style="font-family:{BF};color:{AC};font-size:0.85rem;">{msg}</div>',
-                    unsafe_allow_html=True,
-                )
-            with st.spinner("Warming up the engines..."):
-                result = incremental_update(max_new_events=5, progress_callback=_progress)
-            if result["new_fights"] > 0:
-                st.success(f"Added {result['new_fights']} new fights, updated {result['updated_fighters']} fighters.")
-                st.cache_resource.clear()
-                st.rerun()
-            else:
-                st.info("Already up to date — no new events found.")
-
     # ── Navigation via underline tabs ────────────────────────────────────────
     fighter_names = sorted(fighters_clean["name"].dropna().unique().tolist())
 
-    tab_fullcard, tab_matchup, tab_profile, tab_news = st.tabs([
-        "Full Card Predictions", "Custom Matchup", "Fighter Profile", "News"
+    tab_fullcard, tab_matchup, tab_profile, tab_news, tab_settings = st.tabs([
+        "Full Card Predictions", "Custom Matchup", "Fighter Profile", "News", "Settings"
     ])
 
     # ── Full Card Predictions ────────────────────────────────────────────────
@@ -1501,9 +1536,9 @@ def main():
 
                 def attr_row(label, value):
                     return (
-                        f'<div style="display:flex;justify-content:space-between;padding:0.6rem 0;border-bottom:1px solid #1a1a1a;">'
-                        f'<span style="font-family:{BF};color:#888;font-size:0.85rem;">{label}</span>'
-                        f'<span style="font-family:{BF};color:#e0e0e0;font-size:0.9rem;font-weight:700;">{value}</span></div>'
+                        f'<div style="display:flex;justify-content:space-between;padding:0.6rem 0;border-bottom:1px solid {T["BORDER"]};">'
+                        f'<span style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.85rem;">{label}</span>'
+                        f'<span style="font-family:{BF};color:{T["TEXT"]};font-size:0.9rem;font-weight:700;">{value}</span></div>'
                     )
 
                 attrs = attr_row("Age", age_str if age_str else "--")
@@ -1536,9 +1571,9 @@ def main():
                     return (
                         f'<div style="margin-bottom:0.6rem;">'
                         f'<div style="display:flex;justify-content:space-between;margin-bottom:0.3rem;">'
-                        f'<span style="font-family:{BF};color:#888;font-size:0.8rem;">{label}</span>'
-                        f'<span style="font-family:{BF};color:#e0e0e0;font-size:0.85rem;font-weight:700;">{display}</span></div>'
-                        f'<div style="background:#1a1a1a;border-radius:4px;height:20px;overflow:hidden;">'
+                        f'<span style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.8rem;">{label}</span>'
+                        f'<span style="font-family:{BF};color:{T["TEXT"]};font-size:0.85rem;font-weight:700;">{display}</span></div>'
+                        f'<div style="background:{T["BORDER"]};border-radius:4px;height:20px;overflow:hidden;">'
                         f'<div style="width:{pct:.0f}%;height:100%;background:{AC};border-radius:4px;transition:width 0.6s ease;"></div></div></div>'
                     )
 
@@ -1586,9 +1621,9 @@ def main():
                                     td = fight.get("td", [])
                                     st.markdown(
                                         f'<div style="background:{CARD_BG};border-radius:12px;padding:1rem;">'
-                                        f'<div style="font-family:{BF};color:#888;font-size:0.85rem;">Sig. Strikes: {sig_str[0] if sig_str else "--"} vs {sig_str[1] if len(sig_str) > 1 else "--"}</div>'
-                                        f'<div style="font-family:{BF};color:#888;font-size:0.85rem;">Knockdowns: {kd[0] if kd else "--"} vs {kd[1] if len(kd) > 1 else "--"}</div>'
-                                        f'<div style="font-family:{BF};color:#888;font-size:0.85rem;">Takedowns: {td[0] if td else "--"} vs {td[1] if len(td) > 1 else "--"}</div>'
+                                        f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.85rem;">Sig. Strikes: {sig_str[0] if sig_str else "--"} vs {sig_str[1] if len(sig_str) > 1 else "--"}</div>'
+                                        f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.85rem;">Knockdowns: {kd[0] if kd else "--"} vs {kd[1] if len(kd) > 1 else "--"}</div>'
+                                        f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.85rem;">Takedowns: {td[0] if td else "--"} vs {td[1] if len(td) > 1 else "--"}</div>'
                                         f'</div>',
                                         unsafe_allow_html=True,
                                     )
@@ -1617,15 +1652,15 @@ def main():
                             evt_date = upcoming_check.get("date", "")
                             st.markdown(
                                 f'<div style="background:{CARD_BG};border-radius:16px;padding:1.5rem;">'
-                                f'<div style="font-family:{HF};color:#e0e0e0;font-size:1.1rem;text-transform:uppercase;">{f_name} vs {opp}</div>'
-                                f'<div style="font-family:{BF};color:#888;font-size:0.8rem;margin-top:0.4rem;">{wc}</div>'
-                                f'<div style="font-family:{BF};color:#555;font-size:0.8rem;margin-top:0.2rem;">{evt_name} -- {evt_date}</div>'
+                                f'<div style="font-family:{HF};color:{T["TEXT"]};font-size:1.1rem;text-transform:uppercase;">{f_name} vs {opp}</div>'
+                                f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.8rem;margin-top:0.4rem;">{wc}</div>'
+                                f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.8rem;margin-top:0.2rem;">{evt_name} -- {evt_date}</div>'
                                 f'</div>',
                                 unsafe_allow_html=True,
                             )
 
                 if not found_upcoming:
-                    st.markdown(f'<div style="background:{CARD_BG};border-radius:16px;padding:1.5rem;text-align:center;"><span style="font-family:{BF};color:#555;font-size:0.85rem;">No upcoming fights scheduled</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="background:{CARD_BG};border-radius:16px;padding:1.5rem;text-align:center;"><span style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.85rem;">No upcoming fights scheduled</span></div>', unsafe_allow_html=True)
             else:
                 st.error("Fighter not found in the database.")
 
@@ -1662,7 +1697,7 @@ def main():
                             link = article["link"]
                             source = article["source"]
                             date = article["date"]
-                            border = "border-bottom:1px solid #1a1a1a;" if i < len(grouped[cat]) - 1 else ""
+                            border = f"border-bottom:1px solid {T['BORDER']};" if i < len(grouped[cat]) - 1 else ""
                             st.markdown(
                                 f'<div style="padding:1.1rem 0.5rem;{border}">'
                                 f'<div style="display:flex;justify-content:space-between;align-items:center;">'
@@ -1670,14 +1705,67 @@ def main():
                                 f'<a href="{link}" target="_blank" style="text-decoration:none;display:flex;align-items:center;">'
                                 f'<svg width="18" height="18" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M6 3h7v7M13 3L3 13" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>'
                                 f'</div>'
-                                f'<div style="font-family:{BF};color:#ccc;font-size:1.1rem;font-weight:600;line-height:1.5;">{title}</div>'
+                                f'<div style="font-family:{BF};color:{T["TEXT_DIM"]};font-size:1.1rem;font-weight:600;line-height:1.5;">{title}</div>'
                                 f'<div style="margin-top:0.6rem;">'
-                                f'<span style="font-family:{BF};color:#555;font-size:0.75rem;">{date}</span>'
+                                f'<span style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.75rem;">{date}</span>'
                                 f'</div></div>',
                                 unsafe_allow_html=True,
                             )
         else:
             st.info("Could not load news. Check your internet connection.")
+
+    # ── Settings ────────────────────────────────────────────────────────────
+    with tab_settings:
+        st.markdown('<div class="section-header">Settings</div>', unsafe_allow_html=True)
+
+        # ── Appearance ──
+        st.markdown(
+            f'<div style="font-family:{HF};color:{AC};font-size:1.3rem;letter-spacing:2px;'
+            f'text-transform:uppercase;margin-bottom:1rem;">Appearance</div>',
+            unsafe_allow_html=True,
+        )
+        current_is_dark = st.session_state.theme == "dark"
+        choice = st.radio(
+            "Theme", ["Dark", "Light"],
+            index=0 if current_is_dark else 1,
+            horizontal=True, label_visibility="collapsed",
+            key="theme_radio",
+        )
+        if choice == "Dark" and not current_is_dark:
+            st.session_state.theme = "dark"
+            st.rerun()
+        elif choice == "Light" and current_is_dark:
+            st.session_state.theme = "light"
+            st.rerun()
+
+        st.markdown(f'<div style="border-top:1px solid {T["BORDER"]};margin:2rem 0;"></div>', unsafe_allow_html=True)
+
+        # ── Data ──
+        st.markdown(
+            f'<div style="font-family:{HF};color:{AC};font-size:1.3rem;letter-spacing:2px;'
+            f'text-transform:uppercase;margin-bottom:0.5rem;">Data</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div style="font-family:{BF};color:{T["TEXT_DIM"]};font-size:0.85rem;margin-bottom:0.8rem;">'
+            f'Scrape the latest events and update fighter stats. Takes 1-2 minutes.</div>',
+            unsafe_allow_html=True,
+        )
+        if st.button("Update Data", type="primary"):
+            status_text = st.empty()
+            def _progress(msg):
+                status_text.markdown(
+                    f'<div style="font-family:{BF};color:{AC};font-size:0.85rem;">{msg}</div>',
+                    unsafe_allow_html=True,
+                )
+            with st.spinner("Updating..."):
+                result = incremental_update(max_new_events=5, progress_callback=_progress)
+            if result["new_fights"] > 0:
+                st.success(f"Added {result['new_fights']} fights, updated {result['updated_fighters']} fighters.")
+                st.cache_resource.clear()
+                st.rerun()
+            else:
+                st.info("Already up to date — no new events found.")
 
 
 if __name__ == "__main__":
