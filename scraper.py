@@ -224,6 +224,58 @@ def scrape_fighter_fight_history(soup: BeautifulSoup) -> list[dict]:
     return fights
 
 
+def scrape_fight_detail(fight_url: str) -> dict:
+    """Scrape detailed stats for a single fight from UFCStats."""
+    soup = _get_soup(fight_url)
+    detail = {"url": fight_url}
+
+    # Fighter names
+    names = [a.text.strip() for a in soup.select(".b-fight-details__person-name a")]
+    detail["fighter_a"] = names[0] if len(names) > 0 else ""
+    detail["fighter_b"] = names[1] if len(names) > 1 else ""
+
+    # Method, round, time
+    for el in soup.select(".b-fight-details__text-item"):
+        text = el.text.strip()
+        if text.startswith("Method:"):
+            detail["method"] = text.replace("Method:", "").strip()
+        elif text.startswith("Round:"):
+            detail["round"] = text.replace("Round:", "").strip()
+        elif text.startswith("Time:"):
+            detail["time"] = text.replace("Time:", "").strip()
+        elif text.startswith("Time format:"):
+            detail["time_format"] = text.replace("Time format:", "").strip()
+        elif text.startswith("Referee:"):
+            detail["referee"] = text.replace("Referee:", "").strip()
+
+    # Parse totals and per-round tables
+    tables = soup.select(".b-fight-details__table")
+
+    def parse_table(table):
+        """Parse a fight stats table into per-round dicts."""
+        headers = [th.text.strip() for th in table.select("thead th")]
+        rows_data = []
+        for row in table.select("tbody tr"):
+            cells = row.select("td")
+            row_dict = {}
+            for j, cell in enumerate(cells):
+                h = headers[j] if j < len(headers) else f"col_{j}"
+                ps = cell.select("p")
+                if ps:
+                    row_dict[h] = [p.text.strip() for p in ps]
+                else:
+                    row_dict[h] = cell.text.strip()
+            rows_data.append(row_dict)
+        return rows_data
+
+    if len(tables) >= 1:
+        detail["totals"] = parse_table(tables[0])
+    if len(tables) >= 2:
+        detail["sig_strikes"] = parse_table(tables[1])
+
+    return detail
+
+
 def scrape_upcoming_events() -> list[dict]:
     """Scrape upcoming UFC events."""
     soup = _get_soup(EVENT_URL)

@@ -1,5 +1,5 @@
 """
-UFC Matchup Predictor - Streamlit Web Application
+Adrenaline - UFC Fight Prediction Platform
 Full-stack app for predicting UFC fight outcomes with visual explainability.
 """
 
@@ -7,6 +7,7 @@ import os
 import sys
 import json
 import hashlib
+import base64
 
 import streamlit as st
 import pandas as pd
@@ -22,6 +23,7 @@ from scraper import (
     build_fight_history_database,
     get_upcoming_card,
     scrape_fighter_details,
+    scrape_fight_detail,
     HEADERS,
 )
 from preprocessing import (
@@ -46,10 +48,17 @@ IMAGE_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data
 os.makedirs(IMAGE_CACHE_DIR, exist_ok=True)
 IMAGE_CACHE_FILE = os.path.join(IMAGE_CACHE_DIR, "fighter_images.json")
 
+# Logo
+LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "logos", "fist_white_fill.png")
+with open(LOGO_PATH, "rb") as _lf:
+    LOGO_B64 = base64.b64encode(_lf.read()).decode()
+LOGO_SRC = f"data:image/png;base64,{LOGO_B64}"
+LOGO_FILTER = "drop-shadow(0 0 4px rgba(211,47,47,0.5)) drop-shadow(0 0 10px rgba(211,47,47,0.2))"
+
 # Page config
 st.set_page_config(
-    page_title="UFC Matchup Predictor",
-    page_icon="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>U</text></svg>",
+    page_title="Adrenaline",
+    page_icon=LOGO_PATH,
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -59,10 +68,10 @@ st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Russo+One&family=Nunito+Sans:wght@300;400;600;700;800&display=swap');
 
-    /* Fade-in animation for all content */
-    @keyframes fadeIn {{
-        from {{ opacity: 0; transform: translateY(8px); }}
-        to {{ opacity: 1; transform: translateY(0); }}
+    /* Scale-in animation */
+    @keyframes scaleIn {{
+        from {{ transform: scale(0.95); opacity: 0; }}
+        to {{ transform: scale(1); opacity: 1; }}
     }}
 
     /* Global */
@@ -72,31 +81,14 @@ st.markdown(f"""
         font-family: {BF};
     }}
 
-    /* Smooth fade on tab content and main elements */
+    /* Scale-in on tab content and main elements */
     .stTabs [role="tabpanel"] {{
-        animation: fadeIn 0.4s ease-out;
+        animation: scaleIn 0.3s ease-out;
     }}
-    .stTabs [role="tabpanel"] > div {{
-        animation: fadeIn 0.35s ease-out;
-    }}
-    .winner-container, .fighter-bg-card, .fight-table, .style-matchup, .reason-box,
+    .winner-container, .fighter-bg-card, .style-matchup,
     .event-header, .section-header, .header-bar {{
-        animation: fadeIn 0.4s ease-out;
+        animation: scaleIn 0.3s ease-out;
     }}
-    .fight-table-row {{
-        animation: fadeIn 0.3s ease-out;
-        animation-fill-mode: both;
-    }}
-    .fight-table-row:nth-child(1) {{ animation-delay: 0.05s; }}
-    .fight-table-row:nth-child(2) {{ animation-delay: 0.1s; }}
-    .fight-table-row:nth-child(3) {{ animation-delay: 0.15s; }}
-    .fight-table-row:nth-child(4) {{ animation-delay: 0.2s; }}
-    .fight-table-row:nth-child(5) {{ animation-delay: 0.25s; }}
-    .fight-table-row:nth-child(6) {{ animation-delay: 0.3s; }}
-    .fight-table-row:nth-child(7) {{ animation-delay: 0.35s; }}
-    .fight-table-row:nth-child(8) {{ animation-delay: 0.4s; }}
-    .fight-table-row:nth-child(9) {{ animation-delay: 0.45s; }}
-    .fight-table-row:nth-child(10) {{ animation-delay: 0.5s; }}
 
     /* Smooth transitions on interactive elements */
     .stButton > button {{
@@ -391,19 +383,19 @@ st.markdown(f"""
         line-height: 1.6;
     }}
 
-    /* Reason boxes */
+    /* Reason boxes - gradient glow */
     .reason-box {{
-        background: {CARD_BG};
+        background: linear-gradient(90deg, rgba(211,47,47,0.12) 0%, #1a1a1a 15%);
         padding: 0.9rem 1.2rem;
-        border-radius: 12px;
-        border-left: 3px solid {AC};
+        border-radius: 10px;
         margin: 0.4rem 0;
         font-family: {BF};
         color: #bbb;
         font-size: 0.85rem;
+        line-height: 1.5;
     }}
     .reason-box.against {{
-        border-left-color: #333;
+        background: linear-gradient(90deg, rgba(100,100,100,0.1) 0%, #1a1a1a 15%);
     }}
 
     /* Fight card table (VS aligned) */
@@ -629,6 +621,73 @@ def get_trained_model(_fighters_df, _fights_df):
     predictor.load_data(_fighters_df, _fights_df)
     predictor.train()
     return predictor
+
+
+def _categorize_article(title: str) -> str:
+    """Categorize a news article based on title keywords."""
+    t = title.lower()
+    # Upcoming fights / matchups
+    upcoming_kw = ["vs.", "vs ", "fight card", "lineup", "main event", "co-main",
+                   "bout", "scheduled", "announced", "booked", "headlines",
+                   "preview", "weigh-in", "face off", "faceoff"]
+    # Past fights / results
+    results_kw = ["results:", "result:", "highlights", "knockout", "ko ", "tko",
+                  "submission", "decision", "wins ", "defeats ", "finish",
+                  "stopped", "chokes", "knocks out", "def.", "scores",
+                  "performance bonus", "post-fight", "recap"]
+    # Organization
+    org_kw = ["ufc ", "dana white", "ranking", "rankings", "contract",
+              "promotion", "ppv", "espn", "broadcast", "deal", "sale",
+              "policy", "anti-doping", "usada", "commission", "hall of fame",
+              "record", "milestone", "expansion"]
+
+    for kw in results_kw:
+        if kw in t:
+            return "Past Fights"
+    for kw in upcoming_kw:
+        if kw in t:
+            return "Upcoming Fights"
+    for kw in org_kw:
+        if kw in t:
+            return "Organization"
+    return "Fighter News"
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def fetch_ufc_news(count: int = 25) -> list[dict]:
+    """Fetch UFC/MMA news from Google News RSS. Cached for 15 minutes."""
+    feed_url = "https://news.google.com/rss/search?q=UFC+MMA&hl=en-US&gl=US&ceid=US:en"
+    try:
+        resp = requests.get(feed_url, headers=HEADERS, timeout=10)
+        if resp.status_code != 200:
+            return []
+        soup = BeautifulSoup(resp.text, "xml")
+        items = soup.select("item")[:count]
+        articles = []
+        for item in items:
+            title = item.find("title").text.strip() if item.find("title") else ""
+            link = item.find("link").text.strip() if item.find("link") else ""
+            pub = item.find("pubDate").text.strip() if item.find("pubDate") else ""
+            source_el = item.find("source")
+            source = source_el.text.strip() if source_el else ""
+            if title:
+                date_short = pub
+                try:
+                    from datetime import datetime
+                    dt = datetime.strptime(pub, "%a, %d %b %Y %H:%M:%S %Z")
+                    date_short = dt.strftime("%b %d, %Y  %I:%M %p")
+                except Exception:
+                    pass
+                articles.append({
+                    "title": title,
+                    "link": link,
+                    "date": date_short,
+                    "source": source,
+                    "category": _categorize_article(title),
+                })
+        return articles
+    except Exception:
+        return []
 
 
 # ── Display helpers ──────────────────────────────────────────────────────────
@@ -982,6 +1041,183 @@ def _render_historical_trends(prediction: dict):
     )
 
 
+def _parse_strike_str(s: str):
+    """Parse '42 of 48' into (42, 48)."""
+    try:
+        parts = s.lower().replace("of", "/").replace(" ", "").split("/")
+        return int(parts[0]), int(parts[1])
+    except Exception:
+        return 0, 0
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def _fetch_fight_detail(fight_url: str) -> dict:
+    """Cached wrapper for scrape_fight_detail."""
+    return scrape_fight_detail(fight_url)
+
+
+def _render_fight_detail(fight_url: str, selected_fighter: str):
+    """Render detailed fight stats inside an expander."""
+    with st.spinner("Loading fight stats..."):
+        try:
+            fd = _fetch_fight_detail(fight_url)
+        except Exception as e:
+            st.error(f"Could not load fight details: {e}")
+            return
+
+    fa = fd.get("fighter_a", "Fighter A")
+    fb = fd.get("fighter_b", "Fighter B")
+    method = fd.get("method", "")
+    rnd = fd.get("round", "")
+    time = fd.get("time", "")
+    referee = fd.get("referee", "")
+
+    # Fight info header
+    st.markdown(
+        f'<div style="background:{CARD_BG};border-radius:12px;padding:1.2rem;margin-bottom:0.8rem;">'
+        f'<div style="display:flex;justify-content:space-between;align-items:center;">'
+        f'<div style="font-family:{HF};color:#e0e0e0;font-size:1.1rem;text-transform:uppercase;">{fa} vs {fb}</div>'
+        f'<div style="font-family:{BF};color:#888;font-size:0.8rem;">R{rnd} {time}</div></div>'
+        f'<div style="font-family:{BF};color:#888;font-size:0.8rem;margin-top:0.4rem;">{method}</div>'
+        f'<div style="font-family:{BF};color:#555;font-size:0.75rem;margin-top:0.2rem;">Referee: {referee}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    # Get totals (first row = totals for entire fight)
+    totals = fd.get("totals", [])
+    sig_detail = fd.get("sig_strikes", [])
+
+    if not totals:
+        st.info("No detailed stats available for this fight.")
+        return
+
+    total_row = totals[0] if totals else {}
+
+    # Extract stats for both fighters
+    def get_pair(row, key):
+        v = row.get(key, ["--", "--"])
+        if isinstance(v, list) and len(v) >= 2:
+            return v[0], v[1]
+        return "--", "--"
+
+    kd_a, kd_b = get_pair(total_row, "KD")
+    sig_a, sig_b = get_pair(total_row, "Sig. str.")
+    sig_pct_a, sig_pct_b = get_pair(total_row, "Sig. str. %")
+    total_a, total_b = get_pair(total_row, "Total str.")
+    td_a, td_b = get_pair(total_row, "Td %")
+    sub_a, sub_b = get_pair(total_row, "Sub. att")
+    ctrl_a, ctrl_b = get_pair(total_row, "Ctrl")
+
+    # Figure out which index is the selected fighter
+    is_a = selected_fighter.lower() in fa.lower()
+    my_label = fa if is_a else fb
+    opp_label = fb if is_a else fa
+
+    # Stat comparison table
+    def compare_row(label, val_a, val_b):
+        return (
+            f'<div style="display:grid;grid-template-columns:1fr 120px 1fr;align-items:center;padding:0.5rem 0;border-bottom:1px solid #1a1a1a;">'
+            f'<div style="font-family:{BF};color:#e0e0e0;font-size:0.9rem;font-weight:700;text-align:right;">{val_a}</div>'
+            f'<div style="font-family:{BF};color:#888;font-size:0.75rem;text-align:center;text-transform:uppercase;letter-spacing:1px;">{label}</div>'
+            f'<div style="font-family:{BF};color:#e0e0e0;font-size:0.9rem;font-weight:700;">{val_b}</div></div>'
+        )
+
+    # Header row with fighter names
+    stat_header = (
+        f'<div style="display:grid;grid-template-columns:1fr 120px 1fr;align-items:center;padding:0.6rem 0;border-bottom:1px solid #333;">'
+        f'<div style="font-family:{HF};color:{AC};font-size:0.9rem;text-align:right;text-transform:uppercase;">{fa}</div>'
+        f'<div style="font-family:{BF};color:#555;font-size:0.7rem;text-align:center;letter-spacing:2px;">STAT</div>'
+        f'<div style="font-family:{HF};color:#888;font-size:0.9rem;text-transform:uppercase;">{fb}</div></div>'
+    )
+
+    stat_rows = stat_header
+    stat_rows += compare_row("Knockdowns", kd_a, kd_b)
+    stat_rows += compare_row("Sig. Strikes", sig_a, sig_b)
+    stat_rows += compare_row("Sig. Str %", sig_pct_a, sig_pct_b)
+    stat_rows += compare_row("Total Strikes", total_a, total_b)
+    stat_rows += compare_row("Takedowns", td_a, td_b)
+    stat_rows += compare_row("Sub. Attempts", sub_a, sub_b)
+    stat_rows += compare_row("Control Time", ctrl_a, ctrl_b)
+
+    st.markdown(f'<div style="background:{CARD_BG};border-radius:12px;padding:1.2rem 1.5rem;margin-bottom:0.8rem;">{stat_rows}</div>', unsafe_allow_html=True)
+
+    # Sig strikes breakdown (head/body/leg, distance/clinch/ground)
+    if sig_detail:
+        sig_row = sig_detail[0]
+        head_a, head_b = get_pair(sig_row, "Head")
+        body_a, body_b = get_pair(sig_row, "Body")
+        leg_a, leg_b = get_pair(sig_row, "Leg")
+        dist_a, dist_b = get_pair(sig_row, "Distance")
+        clinch_a, clinch_b = get_pair(sig_row, "Clinch")
+        ground_a, ground_b = get_pair(sig_row, "Ground")
+
+        st.markdown(f'<div style="font-family:{BF};color:{AC};font-size:0.75rem;letter-spacing:3px;text-transform:uppercase;margin:1rem 0 0.6rem 0;">SIGNIFICANT STRIKES BREAKDOWN</div>', unsafe_allow_html=True)
+
+        # Target area bars
+        def strike_bar(label, val_a_str, val_b_str):
+            landed_a, thrown_a = _parse_strike_str(val_a_str)
+            landed_b, thrown_b = _parse_strike_str(val_b_str)
+            max_landed = max(landed_a, landed_b, 1)
+            pct_a = (landed_a / max_landed) * 100
+            pct_b = (landed_b / max_landed) * 100
+            return (
+                f'<div style="margin-bottom:0.8rem;">'
+                f'<div style="font-family:{BF};color:#888;font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;margin-bottom:0.4rem;">{label}</div>'
+                f'<div style="display:grid;grid-template-columns:1fr 10px 1fr;gap:0.3rem;align-items:center;">'
+                f'<div style="display:flex;align-items:center;gap:0.5rem;justify-content:flex-end;">'
+                f'<span style="font-family:{BF};color:#e0e0e0;font-size:0.8rem;font-weight:700;">{val_a_str}</span>'
+                f'<div style="width:{pct_a:.0f}%;max-width:100%;height:16px;background:{AC};border-radius:3px 0 0 3px;min-width:2px;"></div></div>'
+                f'<div></div>'
+                f'<div style="display:flex;align-items:center;gap:0.5rem;">'
+                f'<div style="width:{pct_b:.0f}%;max-width:100%;height:16px;background:#555;border-radius:0 3px 3px 0;min-width:2px;"></div>'
+                f'<span style="font-family:{BF};color:#e0e0e0;font-size:0.8rem;font-weight:700;">{val_b_str}</span></div>'
+                f'</div></div>'
+            )
+
+        breakdown = strike_bar("Head", head_a, head_b)
+        breakdown += strike_bar("Body", body_a, body_b)
+        breakdown += strike_bar("Leg", leg_a, leg_b)
+        breakdown += strike_bar("At Distance", dist_a, dist_b)
+        breakdown += strike_bar("In Clinch", clinch_a, clinch_b)
+        breakdown += strike_bar("On Ground", ground_a, ground_b)
+
+        st.markdown(f'<div style="background:{CARD_BG};border-radius:12px;padding:1.2rem 1.5rem;margin-bottom:0.8rem;">{breakdown}</div>', unsafe_allow_html=True)
+
+    # Per-round breakdown
+    if len(totals) > 1:
+        st.markdown(f'<div style="font-family:{BF};color:{AC};font-size:0.75rem;letter-spacing:3px;text-transform:uppercase;margin:1rem 0 0.6rem 0;">PER-ROUND BREAKDOWN</div>', unsafe_allow_html=True)
+
+        for ri, rnd_row in enumerate(totals[1:], 1):
+            r_sig_a, r_sig_b = get_pair(rnd_row, "Sig. str.")
+            r_kd_a, r_kd_b = get_pair(rnd_row, "KD")
+            r_td_a, r_td_b = get_pair(rnd_row, "Td %")
+            r_ctrl_a, r_ctrl_b = get_pair(rnd_row, "Ctrl")
+
+            landed_a, _ = _parse_strike_str(r_sig_a)
+            landed_b, _ = _parse_strike_str(r_sig_b)
+            max_l = max(landed_a, landed_b, 1)
+            bar_a = (landed_a / max_l) * 100
+            bar_b = (landed_b / max_l) * 100
+
+            st.markdown(
+                f'<div style="background:{CARD_BG};border-radius:10px;padding:1rem 1.2rem;margin-bottom:0.4rem;">'
+                f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">'
+                f'<span style="font-family:{HF};color:#e0e0e0;font-size:0.85rem;">ROUND {ri}</span>'
+                f'<span style="font-family:{BF};color:#555;font-size:0.75rem;">KD: {r_kd_a}-{r_kd_b} | TD: {r_td_a} vs {r_td_b} | Ctrl: {r_ctrl_a} vs {r_ctrl_b}</span></div>'
+                f'<div style="display:grid;grid-template-columns:1fr 10px 1fr;gap:0.3rem;align-items:center;">'
+                f'<div style="display:flex;align-items:center;gap:0.5rem;justify-content:flex-end;">'
+                f'<span style="font-family:{BF};color:#e0e0e0;font-size:0.8rem;font-weight:700;">{r_sig_a}</span>'
+                f'<div style="width:{bar_a:.0f}%;max-width:100%;height:14px;background:{AC};border-radius:3px 0 0 3px;min-width:2px;"></div></div>'
+                f'<div></div>'
+                f'<div style="display:flex;align-items:center;gap:0.5rem;">'
+                f'<div style="width:{bar_b:.0f}%;max-width:100%;height:14px;background:#555;border-radius:0 3px 3px 0;min-width:2px;"></div>'
+                f'<span style="font-family:{BF};color:#e0e0e0;font-size:0.8rem;font-weight:700;">{r_sig_b}</span></div>'
+                f'</div></div>',
+                unsafe_allow_html=True,
+            )
+
+
 def display_prediction(prediction: dict):
     """Display full prediction results with visualizations."""
     if "error" in prediction:
@@ -1048,7 +1284,7 @@ def main():
     if not data_exists:
         st.markdown(
             f'<div style="text-align:center;padding:4rem 2rem;">'
-            f'<div style="font-family:{HF};color:{AC};font-size:2rem;letter-spacing:2px;">UFC</div>'
+            f'<div style="font-family:{HF};color:{AC};font-size:2rem;letter-spacing:2px;">ADRENALINE</div>'
             f'<div style="font-family:{BF};color:#555;font-size:0.8rem;letter-spacing:2px;text-transform:uppercase;margin-top:0.5rem;">MATCHUP PREDICTOR</div>'
             f'<div style="font-family:{BF};color:#888;font-size:1rem;margin-top:2rem;">No cached data found. Run the data collection script first:</div>'
             f'<div style="background:{CARD_BG};border-radius:12px;padding:1.2rem;margin:1.5rem auto;max-width:400px;font-family:monospace;color:#aaa;font-size:0.85rem;">python collect_data.py</div>'
@@ -1087,18 +1323,64 @@ def main():
     else:
         stats_inner = f'<div class="h-stat"><span class="h-num">{n_fighters}</span><span class="h-label">Fighters</span></div><div class="h-divider"></div><div class="h-stat"><span class="h-num">{n_fights}</span><span class="h-label">Fights</span></div>'
 
-    st.markdown(f'<div class="header-bar"><div class="brand">UFC</div><div class="header-stats">{stats_inner}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="header-bar"><div style="display:flex;align-items:center;gap:0.8rem;"><img src="{LOGO_SRC}" style="width:44px;height:44px;object-fit:contain;filter:{LOGO_FILTER};"><div class="brand">ADRENALINE</div></div><div class="header-stats">{stats_inner}</div></div>', unsafe_allow_html=True)
 
     # ── Navigation via underline tabs ────────────────────────────────────────
-    tab_matchup, tab_upcoming, tab_fullcard = st.tabs([
-        "Custom Matchup", "Upcoming Event", "Full Card Predictions"
+    fighter_names = sorted(fighters_clean["name"].dropna().unique().tolist())
+
+    tab_fullcard, tab_matchup, tab_profile, tab_news = st.tabs([
+        "Full Card Predictions", "Custom Matchup", "Fighter Profile", "News"
     ])
+
+    # ── Full Card Predictions ────────────────────────────────────────────────
+    with tab_fullcard:
+        st.markdown('<div class="section-header">Full Card Predictions</div>', unsafe_allow_html=True)
+
+        with st.spinner("Fetching upcoming event..."):
+            try:
+                upcoming_fc = get_upcoming_card()
+            except Exception as e:
+                st.error(f"Could not fetch upcoming events: {e}")
+                upcoming_fc = {}
+
+        if upcoming_fc and upcoming_fc.get("fights"):
+            fc_evt = upcoming_fc.get('event', 'Unknown Event')
+            fc_date = upcoming_fc.get('date', 'TBD')
+            st.markdown(f'<div class="event-header"><div class="event-name">{fc_evt}</div><div class="event-detail">{fc_date}</div></div>', unsafe_allow_html=True)
+
+            if "fc_results" not in st.session_state:
+                st.session_state.fc_results = None
+            if "active_fc" not in st.session_state:
+                st.session_state.active_fc = None
+
+            if st.button("PREDICT ENTIRE CARD", type="primary", use_container_width=True):
+                with st.spinner("Predicting all fights..."):
+                    st.session_state.fc_results = predictor.predict_card(upcoming_fc["fights"])
+                    st.session_state.active_fc = 0
+                    st.rerun()
+
+            if st.session_state.fc_results:
+                for i, pred in enumerate(st.session_state.fc_results):
+                    is_active = st.session_state.active_fc == i
+                    winner_info = ""
+                    if "predicted_winner" in pred:
+                        winner_info = f"  --  Winner: {pred['predicted_winner']} ({round(pred['confidence'])}%)"
+                    wc_info = f"  --  {pred.get('weight_class', '')}" if pred.get('weight_class') else ""
+                    btn_label = f"{pred['fighter_a']['name']} vs {pred['fighter_b']['name']}{wc_info}{winner_info}"
+
+                    if st.button(btn_label, key=f"fc_{i}", use_container_width=True,
+                                 type="primary" if is_active else "secondary"):
+                        st.session_state.active_fc = None if is_active else i
+                        st.rerun()
+
+                    if is_active:
+                        display_prediction(pred)
+        else:
+            st.info("No upcoming events found.")
 
     # ── Custom Matchup ───────────────────────────────────────────────────────
     with tab_matchup:
         st.markdown('<div class="section-header">Custom Matchup</div>', unsafe_allow_html=True)
-
-        fighter_names = sorted(fighters_clean["name"].dropna().unique().tolist())
 
         col1, col_mid, col2 = st.columns([5, 1, 5])
         with col1:
@@ -1119,70 +1401,246 @@ def main():
                     except ValueError as e:
                         st.error(f"Error: {e}")
 
-    # ── Upcoming Event ───────────────────────────────────────────────────────
-    with tab_upcoming:
-        st.markdown('<div class="section-header">Next Upcoming UFC Event</div>', unsafe_allow_html=True)
+    # ── Fighter Profile ──────────────────────────────────────────────────────
+    with tab_profile:
+        st.markdown('<div class="section-header">Fighter Profile</div>', unsafe_allow_html=True)
 
-        with st.spinner("Fetching upcoming event..."):
-            try:
-                upcoming = get_upcoming_card()
-            except Exception as e:
-                st.error(f"Could not fetch upcoming events: {e}")
-                upcoming = {}
+        selected_fighter = st.selectbox("SELECT FIGHTER", fighter_names, index=0, key="fp")
 
-        if upcoming and upcoming.get("fights"):
-            evt = upcoming.get('event', 'Unknown Event')
-            evt_date = upcoming.get('date', 'TBD')
-            evt_loc = upcoming.get('location', 'TBD')
-            st.markdown(f'<div class="event-header"><div class="event-name">{evt}</div><div class="event-detail">{evt_date} -- {evt_loc}</div></div>', unsafe_allow_html=True)
+        if selected_fighter:
+            row = get_fighter_by_name(fighters_clean, selected_fighter)
+            if row is not None:
+                f = row.to_dict()
+                f_name = f.get("name", selected_fighter)
+                img_url = get_fighter_image_url(f_name)
+                initials = get_fighter_initials(f_name)
+                parts = f_name.split()
+                first = parts[0] if parts else ""
+                last = " ".join(parts[1:]).upper() if len(parts) > 1 else first.upper()
+                if not last:
+                    last = first.upper()
+                    first = ""
 
-            # Each fight is its own clickable expander
-            for i, fight in enumerate(upcoming["fights"]):
-                fa_name = fight["fighter_a"]
-                fb_name = fight["fighter_b"]
-                wc = fight.get("weight_class", "")
-                label = f"{fa_name}  vs  {fb_name}    --  {wc}" if wc else f"{fa_name}  vs  {fb_name}"
-                with st.expander(label, expanded=False):
-                    if st.button("PREDICT THIS FIGHT", type="primary", use_container_width=True, key=f"predict_{i}"):
-                        with st.spinner("Analyzing..."):
-                            try:
-                                prediction = predictor.predict_matchup(fa_name, fb_name)
-                                display_prediction(prediction)
-                            except ValueError as e:
-                                st.error(f"Could not predict: {e}")
-        else:
-            st.info("No upcoming events found. Check back later.")
+                record = f"{int(f.get('wins', 0))}-{int(f.get('losses', 0))}-{int(f.get('draws', 0))}"
+                stance = f.get("stance", "") or "Unknown"
+                dob = f.get("dob", "")
+                age_str = ""
+                if dob and str(dob) != "nan":
+                    try:
+                        from datetime import datetime
+                        born = datetime.strptime(str(dob)[:10], "%Y-%m-%d")
+                        age_str = str(int((datetime.now() - born).days / 365.25))
+                    except Exception:
+                        pass
 
-    # ── Full Card Predictions ────────────────────────────────────────────────
-    with tab_fullcard:
-        st.markdown('<div class="section-header">Full Card Predictions</div>', unsafe_allow_html=True)
+                height = f.get("height_cm", 0)
+                height_str = f"{height:.0f} cm" if height and str(height) != "nan" else "--"
+                weight = f.get("weight_kg", 0)
+                weight_str = f"{weight:.1f} kg" if weight and str(weight) != "nan" else "--"
+                reach = f.get("reach_cm", 0)
+                reach_str = f"{reach:.0f} cm" if reach and str(reach) != "nan" else "--"
 
-        with st.spinner("Fetching upcoming event..."):
-            try:
-                upcoming_fc = get_upcoming_card()
-            except Exception as e:
-                st.error(f"Could not fetch upcoming events: {e}")
-                upcoming_fc = {}
+                # Fighter card with image
+                if img_url:
+                    img_html = f'<img class="fighter-photo" src="{img_url}">'
+                else:
+                    img_html = f'<div class="initials-circle">{initials}</div>'
 
-        if upcoming_fc and upcoming_fc.get("fights"):
-            fc_evt = upcoming_fc.get('event', 'Unknown Event')
-            fc_date = upcoming_fc.get('date', 'TBD')
-            st.markdown(f'<div class="event-header"><div class="event-name">{fc_evt}</div><div class="event-detail">{fc_date}</div></div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="fighter-bg-card" style="min-height:320px;">'
+                    f'{img_html}'
+                    f'<div class="fighter-info">'
+                    f'<div class="f-weight">{stance} STANCE</div>'
+                    f'<div class="f-last">{last}</div>'
+                    f'<div class="f-first">{first}</div>'
+                    f'<div class="f-record">{record}</div>'
+                    f'<div class="f-record-label">W / L / D</div>'
+                    f'</div></div>',
+                    unsafe_allow_html=True,
+                )
 
-            if st.button("PREDICT ENTIRE CARD", type="primary", use_container_width=True):
-                with st.spinner("Predicting all fights..."):
-                    results = predictor.predict_card(upcoming_fc["fights"])
+                # Physical attributes
+                st.markdown(f'<div style="font-family:{BF};color:{AC};font-size:0.75rem;letter-spacing:3px;text-transform:uppercase;margin:1.5rem 0 0.8rem 0;">PHYSICAL ATTRIBUTES</div>', unsafe_allow_html=True)
 
-                for i, pred in enumerate(results):
-                    label = (
-                        f"{pred['fighter_a']['name']} vs {pred['fighter_b']['name']}"
-                        f"{' -- ' + pred.get('weight_class', '') if pred.get('weight_class') else ''}"
-                        f"{' -- Winner: ' + pred['predicted_winner'] + ' (' + str(round(pred['confidence'])) + '%)' if 'predicted_winner' in pred else ''}"
+                def attr_row(label, value):
+                    return (
+                        f'<div style="display:flex;justify-content:space-between;padding:0.6rem 0;border-bottom:1px solid #1a1a1a;">'
+                        f'<span style="font-family:{BF};color:#888;font-size:0.85rem;">{label}</span>'
+                        f'<span style="font-family:{BF};color:#e0e0e0;font-size:0.9rem;font-weight:700;">{value}</span></div>'
                     )
-                    with st.expander(label, expanded=(i == 0)):
-                        display_prediction(pred)
+
+                attrs = attr_row("Age", age_str if age_str else "--")
+                attrs += attr_row("Height", height_str)
+                attrs += attr_row("Weight", weight_str)
+                attrs += attr_row("Reach", reach_str)
+                attrs += attr_row("Stance", stance)
+                attrs += attr_row("DOB", str(dob)[:10] if dob and str(dob) != "nan" else "--")
+
+                st.markdown(f'<div style="background:{CARD_BG};border-radius:16px;padding:1.2rem 1.5rem;">{attrs}</div>', unsafe_allow_html=True)
+
+                # Career stats
+                st.markdown(f'<div style="font-family:{BF};color:{AC};font-size:0.75rem;letter-spacing:3px;text-transform:uppercase;margin:1.5rem 0 0.8rem 0;">CAREER STATISTICS</div>', unsafe_allow_html=True)
+
+                slpm = f.get("slpm", 0) or 0
+                str_acc = f.get("str_acc", 0) or 0
+                sapm = f.get("sapm", 0) or 0
+                str_def = f.get("str_def", 0) or 0
+                td_avg = f.get("td_avg", 0) or 0
+                td_acc = f.get("td_acc", 0) or 0
+                td_def = f.get("td_def", 0) or 0
+                sub_avg = f.get("sub_avg", 0) or 0
+
+                def stat_bar(label, value, max_val, fmt=""):
+                    pct = min((float(value) / max_val) * 100, 100) if max_val > 0 else 0
+                    if fmt == "pct":
+                        display = f"{float(value)*100:.0f}%"
+                    else:
+                        display = f"{float(value):.2f}"
+                    return (
+                        f'<div style="margin-bottom:0.6rem;">'
+                        f'<div style="display:flex;justify-content:space-between;margin-bottom:0.3rem;">'
+                        f'<span style="font-family:{BF};color:#888;font-size:0.8rem;">{label}</span>'
+                        f'<span style="font-family:{BF};color:#e0e0e0;font-size:0.85rem;font-weight:700;">{display}</span></div>'
+                        f'<div style="background:#1a1a1a;border-radius:4px;height:20px;overflow:hidden;">'
+                        f'<div style="width:{pct:.0f}%;height:100%;background:{AC};border-radius:4px;transition:width 0.6s ease;"></div></div></div>'
+                    )
+
+                stats_html = stat_bar("Strikes Landed / Min", slpm, 8)
+                stats_html += stat_bar("Strike Accuracy", str_acc, 1, "pct")
+                stats_html += stat_bar("Strikes Absorbed / Min", sapm, 8)
+                stats_html += stat_bar("Strike Defense", str_def, 1, "pct")
+                stats_html += stat_bar("Takedowns / 15 Min", td_avg, 6)
+                stats_html += stat_bar("Takedown Accuracy", td_acc, 1, "pct")
+                stats_html += stat_bar("Takedown Defense", td_def, 1, "pct")
+                stats_html += stat_bar("Submissions / 15 Min", sub_avg, 3)
+
+                st.markdown(f'<div style="background:{CARD_BG};border-radius:16px;padding:1.2rem 1.5rem;">{stats_html}</div>', unsafe_allow_html=True)
+
+                # Fight history (scraped on demand from UFCStats)
+                st.markdown(f'<div style="font-family:{BF};color:{AC};font-size:0.75rem;letter-spacing:3px;text-transform:uppercase;margin:1.5rem 0 0.8rem 0;">FIGHT HISTORY</div>', unsafe_allow_html=True)
+
+                fighter_url = f.get("url", "")
+                if fighter_url:
+                    with st.spinner("Loading fight history..."):
+                        try:
+                            details = scrape_fighter_details(fighter_url)
+                            history = details.get("fight_history", [])
+                        except Exception:
+                            history = []
+
+                    if history:
+                        for fi, fight in enumerate(history[:15]):
+                            result = fight.get("result", "").strip().upper()
+                            opponent = fight.get("opponent", "Unknown")
+                            method = fight.get("method", "")
+                            rnd = fight.get("round", "")
+                            method_short = method.split("\n")[0].strip() if method else ""
+                            res_tag = "WIN" if result == "WIN" else "LOSS" if result == "LOSS" else result
+                            label = f"{res_tag}  --  {opponent}  --  {method_short}  (R{rnd})"
+
+                            with st.expander(label, expanded=False):
+                                fight_url = fight.get("fight_url", "")
+                                if fight_url:
+                                    _render_fight_detail(fight_url, f_name)
+                                else:
+                                    # Fallback: show summary stats from the fight history row
+                                    sig_str = fight.get("sig_str", [])
+                                    kd = fight.get("kd", [])
+                                    td = fight.get("td", [])
+                                    st.markdown(
+                                        f'<div style="background:{CARD_BG};border-radius:12px;padding:1rem;">'
+                                        f'<div style="font-family:{BF};color:#888;font-size:0.85rem;">Sig. Strikes: {sig_str[0] if sig_str else "--"} vs {sig_str[1] if len(sig_str) > 1 else "--"}</div>'
+                                        f'<div style="font-family:{BF};color:#888;font-size:0.85rem;">Knockdowns: {kd[0] if kd else "--"} vs {kd[1] if len(kd) > 1 else "--"}</div>'
+                                        f'<div style="font-family:{BF};color:#888;font-size:0.85rem;">Takedowns: {td[0] if td else "--"} vs {td[1] if len(td) > 1 else "--"}</div>'
+                                        f'</div>',
+                                        unsafe_allow_html=True,
+                                    )
+                    else:
+                        st.info("No fight history available.")
+                else:
+                    st.info("No fighter URL available to load history.")
+
+                # Upcoming fights for this fighter
+                st.markdown(f'<div style="font-family:{BF};color:{AC};font-size:0.75rem;letter-spacing:3px;text-transform:uppercase;margin:1.5rem 0 0.8rem 0;">UPCOMING FIGHTS</div>', unsafe_allow_html=True)
+
+                try:
+                    upcoming_check = get_upcoming_card()
+                except Exception:
+                    upcoming_check = {}
+
+                found_upcoming = False
+                if upcoming_check and upcoming_check.get("fights"):
+                    for fight in upcoming_check["fights"]:
+                        if (f_name.lower() in fight["fighter_a"].lower() or
+                                f_name.lower() in fight["fighter_b"].lower()):
+                            found_upcoming = True
+                            opp = fight["fighter_b"] if f_name.lower() in fight["fighter_a"].lower() else fight["fighter_a"]
+                            wc = fight.get("weight_class", "")
+                            evt_name = upcoming_check.get("event", "")
+                            evt_date = upcoming_check.get("date", "")
+                            st.markdown(
+                                f'<div style="background:{CARD_BG};border-radius:16px;padding:1.5rem;">'
+                                f'<div style="font-family:{HF};color:#e0e0e0;font-size:1.1rem;text-transform:uppercase;">{f_name} vs {opp}</div>'
+                                f'<div style="font-family:{BF};color:#888;font-size:0.8rem;margin-top:0.4rem;">{wc}</div>'
+                                f'<div style="font-family:{BF};color:#555;font-size:0.8rem;margin-top:0.2rem;">{evt_name} -- {evt_date}</div>'
+                                f'</div>',
+                                unsafe_allow_html=True,
+                            )
+
+                if not found_upcoming:
+                    st.markdown(f'<div style="background:{CARD_BG};border-radius:16px;padding:1.5rem;text-align:center;"><span style="font-family:{BF};color:#555;font-size:0.85rem;">No upcoming fights scheduled</span></div>', unsafe_allow_html=True)
+            else:
+                st.error("Fighter not found in the database.")
+
+    # ── News ─────────────────────────────────────────────────────────────────
+    with tab_news:
+        st.markdown('<div class="section-header">News</div>', unsafe_allow_html=True)
+
+        with st.spinner("Fetching latest news..."):
+            articles = fetch_ufc_news(25)
+
+        if articles:
+            # Group by category with per-category source colors
+            categories_order = ["Past Fights", "Upcoming Fights", "Fighter News", "Organization"]
+            cat_source_colors = {
+                "Past Fights": AC,
+                "Upcoming Fights": "#f9a825",
+                "Fighter News": "#4fc3f7",
+                "Organization": "#ce93d8",
+            }
+            grouped = {}
+            for a in articles:
+                cat = a["category"]
+                if cat not in grouped:
+                    grouped[cat] = []
+                grouped[cat].append(a)
+
+            available_cats = [c for c in categories_order if c in grouped]
+            if available_cats:
+                news_tabs = st.tabs(available_cats)
+                for news_tab, cat in zip(news_tabs, available_cats):
+                    with news_tab:
+                        for i, article in enumerate(grouped[cat]):
+                            title = article["title"]
+                            link = article["link"]
+                            source = article["source"]
+                            date = article["date"]
+                            border = "border-bottom:1px solid #1a1a1a;" if i < len(grouped[cat]) - 1 else ""
+                            st.markdown(
+                                f'<div style="padding:1.1rem 0.5rem;{border}">'
+                                f'<div style="display:flex;justify-content:space-between;align-items:center;">'
+                                f'<div style="font-family:{BF};color:{AC};font-size:1rem;font-weight:900;margin-bottom:0.4rem;">{source}</div>'
+                                f'<a href="{link}" target="_blank" style="text-decoration:none;display:flex;align-items:center;">'
+                                f'<svg width="18" height="18" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M6 3h7v7M13 3L3 13" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>'
+                                f'</div>'
+                                f'<div style="font-family:{BF};color:#ccc;font-size:1.1rem;font-weight:600;line-height:1.5;">{title}</div>'
+                                f'<div style="margin-top:0.6rem;">'
+                                f'<span style="font-family:{BF};color:#555;font-size:0.75rem;">{date}</span>'
+                                f'</div></div>',
+                                unsafe_allow_html=True,
+                            )
         else:
-            st.info("No upcoming events found.")
+            st.info("Could not load news. Check your internet connection.")
 
 
 if __name__ == "__main__":
