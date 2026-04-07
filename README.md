@@ -1,10 +1,10 @@
-# Adrenaline
+# AdrenalineAI
 
 An ML-powered UFC fight prediction platform built with real fighter statistics scraped from UFCStats.com. Select any two fighters or browse upcoming events to get AI-driven predictions with detailed breakdowns, stat comparisons, and confidence ratings.
 
 ## Goal
 
-Adrenaline goes beyond simple win/loss guessing. It scrapes real fighter data (striking output, takedown accuracy, defense, reach, age, win streaks, and more), trains an XGBoost model on historical fight outcomes, and presents predictions through a clean, dark-themed UI inspired by professional fight apps. Every prediction comes with feature importance analysis, tale-of-the-tape comparisons, radar charts, and a breakdown of why the model favors one fighter over the other.
+AdrenalineAI goes beyond simple win/loss guessing. It scrapes real fighter data (striking output, takedown accuracy, defense, reach, age, win streaks, and more), trains an XGBoost model on historical fight outcomes, and presents predictions through a clean, dark-themed UI inspired by professional fight apps. Every prediction comes with feature importance analysis, tale-of-the-tape comparisons, radar charts, and a breakdown of why the model favors one fighter over the other.
 
 ## Features
 
@@ -23,8 +23,8 @@ Adrenaline goes beyond simple win/loss guessing. It scrapes real fighter data (s
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Mustafan4x/Adrenaline.git
-   cd Adrenaline
+   git clone https://github.com/Mustafan4x/AdrenalineAI.git
+   cd AdrenalineAI
    ```
 
 2. Create and activate a virtual environment:
@@ -41,7 +41,7 @@ Adrenaline goes beyond simple win/loss guessing. It scrapes real fighter data (s
 
 ## Usage
 
-### Launch Adrenaline
+### Launch AdrenalineAI
 
 Fighter data and fight history are included in the repo, so no setup is needed:
 

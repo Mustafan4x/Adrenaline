@@ -1,5 +1,5 @@
 """
-Adrenaline - UFC Fight Prediction Platform
+AdrenalineAI - UFC Fight Prediction Platform
 Full-stack app for predicting UFC fight outcomes with visual explainability.
 """
 
@@ -73,7 +73,7 @@ LOGO_FILTER = "drop-shadow(0 0 4px rgba(211,47,47,0.5)) drop-shadow(0 0 10px rgb
 
 import random
 LOADING_SAYINGS = [
-    "Adrenaline pumping...",
+    "AdrenalineAI pumping...",
     "Stepping into the octagon...",
     "Warming up the engines...",
     "Wrapping the hands...",
@@ -103,7 +103,7 @@ def _loading_screen(text: str | None = None):
 
 # Page config
 st.set_page_config(
-    page_title="Adrenaline",
+    page_title="AdrenalineAI",
     page_icon=LOGO_PATH,
     layout="wide",
     initial_sidebar_state="collapsed",

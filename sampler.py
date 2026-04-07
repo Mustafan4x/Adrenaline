@@ -7,7 +7,7 @@ with open(LOGO_PATH, "rb") as _lf:
     LOGO_B64 = base64.b64encode(_lf.read()).decode()
 LOGO_SRC = f"data:image/png;base64,{LOGO_B64}"
 
-st.set_page_config(page_title="Adrenaline – Sampler", page_icon=LOGO_PATH, layout="wide")
+st.set_page_config(page_title="AdrenalineAI – Sampler", page_icon=LOGO_PATH, layout="wide")
 
 AC = "#d32f2f"
 BG = "#0d0d0d"
@@ -455,7 +455,7 @@ toggles_html = f"""
             <div style="width:20px;"></div>
             <div class="toggle-f on"><div class="knob"></div></div>
         </div>
-        <div class="toggle-desc">Glow slider — red glow effect on active state, matches Adrenaline branding.</div>
+        <div class="toggle-desc">Glow slider — red glow effect on active state, matches AdrenalineAI branding.</div>
     </div>
 
     <!-- G: Rounded chip select -->
