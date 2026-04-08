@@ -551,6 +551,9 @@ st.markdown(f"""
     .stTabs .stTabs [data-baseweb="tab"] {{
         font-size: 1.05rem;
     }}
+    .stTabs .stTabs [role="tabpanel"] {{
+        zoom: 1.2;
+    }}
 
     /* Selectbox */
     .stSelectbox label {{
