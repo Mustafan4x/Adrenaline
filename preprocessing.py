@@ -318,9 +318,17 @@ def create_difference_matrix(fighter_a: pd.Series, fighter_b: pd.Series) -> np.n
 
     diff = []
     for col in FEATURE_COLUMNS:
-        val_a = feats_a.get(col, 0) or 0
-        val_b = feats_b.get(col, 0) or 0
-        diff.append(float(val_a) - float(val_b))
+        val_a = feats_a.get(col, 0)
+        val_b = feats_b.get(col, 0)
+        try:
+            val_a = float(val_a) if val_a is not None and val_a == val_a else 0.0
+        except (TypeError, ValueError):
+            val_a = 0.0
+        try:
+            val_b = float(val_b) if val_b is not None and val_b == val_b else 0.0
+        except (TypeError, ValueError):
+            val_b = 0.0
+        diff.append(val_a - val_b)
 
     return np.array(diff).reshape(1, -1)
 

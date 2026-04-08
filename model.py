@@ -308,7 +308,7 @@ class UFCPredictor:
                 prediction["weight_class"] = fight.get("weight_class", "")
                 prediction["has_odds"] = odds_a is not None
                 results.append(prediction)
-            except ValueError as e:
+            except Exception as e:
                 results.append({
                     "fighter_a": {"name": fight["fighter_a"]},
                     "fighter_b": {"name": fight["fighter_b"]},
