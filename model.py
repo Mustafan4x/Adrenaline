@@ -23,6 +23,7 @@ from preprocessing import (
     classify_combat_style,
     get_style_matchup_description,
     compute_win_streak,
+    enrich_fighters,
 )
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
@@ -48,6 +49,8 @@ class UFCPredictor:
         for idx, row in self.fighters_df.iterrows():
             name = row.get("name", "")
             self.fighters_df.at[idx, "win_streak"] = compute_win_streak(fights_df, name)
+        # Enrich with recent form, opponent quality, finish rates, weight class
+        self.fighters_df = enrich_fighters(self.fighters_df, fights_df)
 
     def train(self, X: np.ndarray = None, y: np.ndarray = None):
         """Train the XGBoost model."""
@@ -71,7 +74,6 @@ class UFCPredictor:
             reg_lambda=1.0,
             random_state=42,
             eval_metric="logloss",
-            use_label_encoder=False,
         )
 
         # Cross-validation
@@ -168,9 +170,9 @@ class UFCPredictor:
             "fighter_b": self._fighter_summary(fb),
             "predicted_winner": winner,
             "predicted_loser": loser,
-            "confidence": round(confidence, 1),
-            "probability_a": round(probabilities[1] * 100, 1),
-            "probability_b": round(probabilities[0] * 100, 1),
+            "confidence": round(float(confidence), 1),
+            "probability_a": round(float(probabilities[1]) * 100, 1),
+            "probability_b": round(float(probabilities[0]) * 100, 1),
             "feature_importances": dict(sorted_features[:15]),
             "reasons_winner": reasons["winner"],
             "reasons_loser": reasons["loser"],
@@ -234,6 +236,14 @@ class UFCPredictor:
             "td_def": "better takedown defense",
             "sub_avg": "more submission attempts",
             "win_streak": "longer current win streak",
+            "recent_win_rate": "better recent form (last 5 fights)",
+            "recent_finish_rate": "higher recent finish rate",
+            "momentum": "stronger momentum (trending upward)",
+            "opponent_quality": "faced tougher opponents",
+            "ko_rate": "higher knockout finish rate",
+            "sub_rate": "higher submission finish rate",
+            "dec_rate": "more decision wins",
+            "weight_class_tier": "weight class factor",
             "style_striker": "striking style",
             "style_grappler": "grappling style",
             "style_aggressive": "aggressive approach",

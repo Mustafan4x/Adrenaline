@@ -76,6 +76,108 @@ def compute_win_streak(fights_df: pd.DataFrame, fighter_name: str) -> int:
     return streak
 
 
+def compute_recent_form(fights_df: pd.DataFrame, fighter_name: str, n: int = 5) -> dict:
+    """Compute stats weighted toward a fighter's last N fights.
+
+    Returns recent win rate, recent finish rate, and a momentum score
+    that captures whether the fighter is trending up or down.
+    """
+    fighter_fights = fights_df[
+        (fights_df["fighter_a"] == fighter_name) | (fights_df["fighter_b"] == fighter_name)
+    ].copy()
+
+    recent = fighter_fights.head(n)
+    if len(recent) == 0:
+        return {"recent_win_rate": 0.5, "recent_finish_rate": 0.0, "momentum": 0.0}
+
+    wins = 0
+    finishes = 0
+    # Weighted momentum: most recent fights count more
+    momentum = 0.0
+    for i, (_, fight) in enumerate(recent.iterrows()):
+        weight = (n - i) / n  # 1.0 for most recent, decreasing
+        won = fight.get("winner") == fighter_name
+        if won:
+            wins += 1
+            momentum += weight
+            method = str(fight.get("method", "")).strip().upper()
+            method_clean = " ".join(method.split())
+            if method_clean.startswith("KO") or method_clean.startswith("SUB"):
+                finishes += 1
+        else:
+            momentum -= weight
+
+    total = len(recent)
+    return {
+        "recent_win_rate": wins / total,
+        "recent_finish_rate": finishes / total,
+        "momentum": momentum / n,  # normalized to [-1, 1]
+    }
+
+
+def compute_opponent_quality(fights_df: pd.DataFrame, fighters_df: pd.DataFrame, fighter_name: str, n: int = 5) -> float:
+    """Compute average win rate of a fighter's recent opponents.
+
+    A fighter who has beaten high win-rate opponents is stronger than one
+    who beat low win-rate opponents.
+    """
+    fighter_fights = fights_df[
+        (fights_df["fighter_a"] == fighter_name) | (fights_df["fighter_b"] == fighter_name)
+    ].head(n)
+
+    if len(fighter_fights) == 0:
+        return 0.5
+
+    opponent_win_rates = []
+    for _, fight in fighter_fights.iterrows():
+        opponent = fight["fighter_b"] if fight["fighter_a"] == fighter_name else fight["fighter_a"]
+        opp_row = fighters_df[fighters_df["name"].str.lower().str.strip() == opponent.lower().strip()]
+        if len(opp_row) > 0:
+            opp = opp_row.iloc[0]
+            total = opp.get("wins", 0) + opp.get("losses", 0) + opp.get("draws", 0)
+            if total > 0:
+                opponent_win_rates.append(opp["wins"] / total)
+
+    return np.mean(opponent_win_rates) if opponent_win_rates else 0.5
+
+
+def compute_finish_rates(fights_df: pd.DataFrame, fighter_name: str) -> dict:
+    """Compute KO rate, submission rate, and decision rate from fight history."""
+    fighter_wins = fights_df[fights_df["winner"] == fighter_name]
+
+    total_wins = len(fighter_wins)
+    if total_wins == 0:
+        return {"ko_rate": 0.0, "sub_rate": 0.0, "dec_rate": 0.0}
+
+    ko_wins = 0
+    sub_wins = 0
+    dec_wins = 0
+    for _, fight in fighter_wins.iterrows():
+        method = " ".join(str(fight.get("method", "")).split()).upper()
+        if method.startswith("KO") or method.startswith("TKO"):
+            ko_wins += 1
+        elif method.startswith("SUB"):
+            sub_wins += 1
+        else:
+            dec_wins += 1
+
+    return {
+        "ko_rate": ko_wins / total_wins,
+        "sub_rate": sub_wins / total_wins,
+        "dec_rate": dec_wins / total_wins,
+    }
+
+
+# Weight class encoding (heavier = higher value, women's divisions offset)
+WEIGHT_CLASS_ORDER = {
+    "Women's Strawweight": 1, "Women's Flyweight": 2, "Women's Bantamweight": 3,
+    "Women's Featherweight": 4, "Flyweight": 5, "Bantamweight": 6,
+    "Featherweight": 7, "Lightweight": 8, "Welterweight": 9,
+    "Middleweight": 10, "Light Heavyweight": 11, "Heavyweight": 12,
+    "Catch Weight": 7,  # default to mid-range
+}
+
+
 def impute_reach(df: pd.DataFrame) -> pd.DataFrame:
     """Impute missing reach data using height correlation."""
     df = df.copy()
@@ -149,6 +251,18 @@ def create_feature_vector(fighter: pd.Series) -> dict:
         "td_def": fighter.get("td_def", 0),
         "sub_avg": fighter.get("sub_avg", 0),
         "win_streak": fighter.get("win_streak", 0),
+        # Recent form features
+        "recent_win_rate": fighter.get("recent_win_rate", 0.5),
+        "recent_finish_rate": fighter.get("recent_finish_rate", 0.0),
+        "momentum": fighter.get("momentum", 0.0),
+        # Opponent quality
+        "opponent_quality": fighter.get("opponent_quality", 0.5),
+        # Finish rates
+        "ko_rate": fighter.get("ko_rate", 0.0),
+        "sub_rate": fighter.get("sub_rate", 0.0),
+        "dec_rate": fighter.get("dec_rate", 0.0),
+        # Weight class tier
+        "weight_class_tier": fighter.get("weight_class_tier", 7),
         # One-hot encoded combat style
         "style_striker": 1 if fighter.get("combat_style") == "Striker" else 0,
         "style_grappler": 1 if fighter.get("combat_style") == "Grappler" else 0,
@@ -165,6 +279,10 @@ FEATURE_COLUMNS = [
     "slpm", "str_acc", "sapm", "str_def",
     "td_avg", "td_acc", "td_def", "sub_avg",
     "win_streak",
+    "recent_win_rate", "recent_finish_rate", "momentum",
+    "opponent_quality",
+    "ko_rate", "sub_rate", "dec_rate",
+    "weight_class_tier",
     "style_striker", "style_grappler", "style_aggressive",
     "style_passive", "style_all_rounder"
 ]
@@ -187,12 +305,57 @@ def create_difference_matrix(fighter_a: pd.Series, fighter_b: pd.Series) -> np.n
     return np.array(diff).reshape(1, -1)
 
 
+def enrich_fighters(fighters_df: pd.DataFrame, fights_df: pd.DataFrame) -> pd.DataFrame:
+    """Add derived features (recent form, opponent quality, finish rates) to fighter data."""
+    fighters_df = fighters_df.copy()
+
+    # Pre-compute weight class tier from most common weight class in fights
+    fighter_weight_classes = {}
+    for _, fight in fights_df.iterrows():
+        wc = fight.get("weight_class", "")
+        for name in [fight.get("fighter_a", ""), fight.get("fighter_b", "")]:
+            if name:
+                fighter_weight_classes.setdefault(name, []).append(wc)
+
+    for idx, row in fighters_df.iterrows():
+        name = row.get("name", "")
+
+        # Recent form
+        form = compute_recent_form(fights_df, name)
+        fighters_df.at[idx, "recent_win_rate"] = form["recent_win_rate"]
+        fighters_df.at[idx, "recent_finish_rate"] = form["recent_finish_rate"]
+        fighters_df.at[idx, "momentum"] = form["momentum"]
+
+        # Opponent quality
+        fighters_df.at[idx, "opponent_quality"] = compute_opponent_quality(
+            fights_df, fighters_df, name
+        )
+
+        # Finish rates
+        rates = compute_finish_rates(fights_df, name)
+        fighters_df.at[idx, "ko_rate"] = rates["ko_rate"]
+        fighters_df.at[idx, "sub_rate"] = rates["sub_rate"]
+        fighters_df.at[idx, "dec_rate"] = rates["dec_rate"]
+
+        # Weight class tier
+        wc_list = fighter_weight_classes.get(name, [])
+        if wc_list:
+            # Most frequent weight class
+            most_common = max(set(wc_list), key=wc_list.count)
+            fighters_df.at[idx, "weight_class_tier"] = WEIGHT_CLASS_ORDER.get(most_common, 7)
+        else:
+            fighters_df.at[idx, "weight_class_tier"] = 7
+
+    return fighters_df
+
+
 def build_training_data(fighters_df: pd.DataFrame, fights_df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     """
     Build training data from historical fights.
     Returns X (difference matrices) and y (1 if fighter_a won, 0 if fighter_b won).
     """
     fighters_df = clean_fighter_data(fighters_df)
+    fighters_df = enrich_fighters(fighters_df, fights_df)
 
     # Create a lookup dict
     fighter_lookup = {}
@@ -200,6 +363,8 @@ def build_training_data(fighters_df: pd.DataFrame, fights_df: pd.DataFrame) -> t
         name = row.get("name", "").strip()
         if name:
             fighter_lookup[name.lower()] = row
+
+    rng = np.random.RandomState(42)
 
     X_list = []
     y_list = []
@@ -214,9 +379,16 @@ def build_training_data(fighters_df: pd.DataFrame, fights_df: pd.DataFrame) -> t
 
         fa = fighter_lookup[fa_name]
         fb = fighter_lookup[fb_name]
+        winner_lower = str(winner).strip().lower()
+
+        # Randomly swap fighter order to prevent positional bias
+        # (UFCStats always lists winner first as fighter_a)
+        if rng.random() < 0.5:
+            fa, fb = fb, fa
+            fa_name, fb_name = fb_name, fa_name
 
         diff = create_difference_matrix(fa, fb)
-        label = 1 if str(winner).strip().lower() == fa_name else 0
+        label = 1 if winner_lower == fa_name else 0
 
         X_list.append(diff.flatten())
         y_list.append(label)
