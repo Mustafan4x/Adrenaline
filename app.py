@@ -203,34 +203,27 @@ st.markdown(f"""
 
     /* Underline tab navigation */
     .stTabs [data-baseweb="tab-list"] {{
-        gap: 0.5rem;
-        background: {T["CARD_BG"]};
-        border-bottom: none;
-        padding: 0.4rem;
+        gap: 2rem;
+        background: transparent;
+        border-bottom: 1px solid {T["BORDER"]};
+        padding: 0;
         justify-content: center;
-        border-radius: 12px;
-        margin-bottom: 1rem;
     }}
     .stTabs [data-baseweb="tab"] {{
         font-family: {BF};
-        color: {T["TEXT_DIM"]};
-        font-weight: 700;
+        color: {T["TEXT_MUTED"]};
+        font-weight: 600;
         letter-spacing: 1.5px;
         text-transform: uppercase;
-        font-size: 0.9rem;
-        padding: 0.7rem 1.4rem;
-        border-radius: 8px;
+        font-size: 0.95rem;
+        padding: 0.8rem 0;
+        border-radius: 0;
         background: transparent !important;
-        transition: all 0.2s ease;
-    }}
-    .stTabs [data-baseweb="tab"]:hover {{
-        color: {T["TEXT"]} !important;
-        background: {T["INNER_BG"]} !important;
     }}
     .stTabs [aria-selected="true"] {{
-        color: #fff !important;
-        background: {AC} !important;
-        box-shadow: 0 2px 8px rgba(211,47,47,0.3);
+        color: {AC} !important;
+        border-bottom: 2px solid {AC} !important;
+        background: transparent !important;
     }}
     .stTabs [data-baseweb="tab-highlight"] {{
         display: none;
