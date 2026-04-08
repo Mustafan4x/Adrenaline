@@ -44,7 +44,7 @@ AC_DARK = "#b71c1c"
 # Theme palettes
 DARK_THEME = {
     "BG": "#0d0d0d", "CARD_BG": "#111", "INNER_BG": "#161616",
-    "TEXT": "#e0e0e0", "TEXT_DIM": "#999", "TEXT_MUTED": "#555",
+    "TEXT": "#e0e0e0", "TEXT_DIM": "#e0e0e0", "TEXT_MUTED": "#e0e0e0",
     "BORDER": "#1a1a1a", "BORDER_HOVER": "#333",
     "INITIALS_BG": "#1a1a1a", "INITIALS_BORDER": "#333",
     "REASON_BG": "rgba(100,100,100,0.1)", "TABLE_HOVER": "rgba(211,47,47,0.03)",
@@ -52,7 +52,7 @@ DARK_THEME = {
 }
 LIGHT_THEME = {
     "BG": "#f5f5f5", "CARD_BG": "#ffffff", "INNER_BG": "#eaeaea",
-    "TEXT": "#1a1a1a", "TEXT_DIM": "#444444", "TEXT_MUTED": "#666666",
+    "TEXT": "#1a1a1a", "TEXT_DIM": "#1a1a1a", "TEXT_MUTED": "#1a1a1a",
     "BORDER": "#ddd", "BORDER_HOVER": "#bbb",
     "INITIALS_BG": "#e0e0e0", "INITIALS_BORDER": "#ccc",
     "REASON_BG": "rgba(60,60,60,0.06)", "TABLE_HOVER": "rgba(211,47,47,0.06)",
