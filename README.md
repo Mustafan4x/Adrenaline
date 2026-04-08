@@ -19,7 +19,15 @@ AdrenalineAI goes beyond simple win/loss guessing. It scrapes real fighter data 
 - One-click data updates after new UFC events
 - Dark theme UI with smooth transitions
 
-## Installation
+## Try It Out
+
+AdrenalineAI is deployed on Streamlit Community Cloud -- no installation required:
+
+**[Launch AdrenalineAI](https://adrenalineai.streamlit.app)**
+
+### Running Locally
+
+If you want to run the app locally instead:
 
 1. Clone the repository:
    ```bash
@@ -39,17 +47,11 @@ AdrenalineAI goes beyond simple win/loss guessing. It scrapes real fighter data 
    pip install -r requirements.txt
    ```
 
-## Usage
-
-### Launch AdrenalineAI
-
-Fighter data and fight history are included in the repo, so no setup is needed:
-
-```bash
-streamlit run app.py
-```
-
-The app will open at `http://localhost:8501`.
+4. Launch the app:
+   ```bash
+   streamlit run app.py
+   ```
+   The app will open at `http://localhost:8501`.
 
 ### Keeping Data Up to Date
 
