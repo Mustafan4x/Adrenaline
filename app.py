@@ -11,6 +11,8 @@ import base64
 import random
 import math
 
+from datetime import datetime
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -29,7 +31,6 @@ from scraper import (
     HEADERS,
 )
 from preprocessing import (
-    clean_fighter_data,
     get_fighter_by_name,
     get_style_matchup_description,
     FEATURE_COLUMNS,
@@ -66,9 +67,13 @@ IMAGE_CACHE_FILE = os.path.join(IMAGE_CACHE_DIR, "fighter_images.json")
 
 # Logo
 LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "logos", "fist_white_fill.png")
-with open(LOGO_PATH, "rb") as _lf:
-    LOGO_B64 = base64.b64encode(_lf.read()).decode()
-LOGO_SRC = f"data:image/png;base64,{LOGO_B64}"
+try:
+    with open(LOGO_PATH, "rb") as _lf:
+        LOGO_B64 = base64.b64encode(_lf.read()).decode()
+    LOGO_SRC = f"data:image/png;base64,{LOGO_B64}"
+except FileNotFoundError:
+    LOGO_B64 = ""
+    LOGO_SRC = ""
 LOADING_SAYINGS = [
     "AdrenalineAI pumping...",
     "Stepping into the octagon...",
@@ -789,7 +794,7 @@ def fetch_ufc_news(count: int = 25) -> list[dict]:
             if title:
                 date_short = pub
                 try:
-                    from datetime import datetime
+
                     dt = datetime.strptime(pub, "%a, %d %b %Y %H:%M:%S %Z")
                     date_short = dt.strftime("%b %d, %Y  %I:%M %p")
                 except Exception:
@@ -810,8 +815,8 @@ def fetch_ufc_news(count: int = 25) -> list[dict]:
 
 def _fighter_card_html(f: dict, img_url: str) -> str:
     """Build HTML for a fighter bg-card with image on the right."""
-    name = esc(f.get("name", "Unknown"))
-    parts = name.split()
+    raw_name = f.get("name", "Unknown")
+    parts = raw_name.split()
     first = esc(parts[0]) if parts else ""
     last = esc(" ".join(parts[1:]).upper()) if len(parts) > 1 else esc(parts[0].upper() if parts else "")
     if not last:
@@ -828,11 +833,11 @@ def _fighter_card_html(f: dict, img_url: str) -> str:
 
     # Image or initials fallback (no JS onerror -- Streamlit strips it)
     if img_url:
-        img_html = f'<img class="fighter-photo" src="{img_url}">'
+        img_html = f'<img class="fighter-photo" src="{esc(img_url)}">'
         fallback_html = ""
     else:
         img_html = ""
-        fallback_html = f'<div class="initials-circle">{initials}</div>'
+        fallback_html = f'<div class="initials-circle">{esc(initials)}</div>'
 
     return (
         f'<div class="fighter-bg-card">'
@@ -1190,19 +1195,19 @@ def _render_fight_detail(fight_url: str, selected_fighter: str):
             st.error(f"Could not load fight details: {e}")
             return
 
-    fa = fd.get("fighter_a", "Fighter A")
-    fb = fd.get("fighter_b", "Fighter B")
-    method = fd.get("method", "")
-    rnd = fd.get("round", "")
-    time = fd.get("time", "")
-    referee = fd.get("referee", "")
+    fa = esc(fd.get("fighter_a", "Fighter A"))
+    fb = esc(fd.get("fighter_b", "Fighter B"))
+    method = esc(fd.get("method", ""))
+    rnd = esc(fd.get("round", ""))
+    fight_time = esc(fd.get("time", ""))
+    referee = esc(fd.get("referee", ""))
 
     # Fight info header
     st.markdown(
         f'<div style="background:{CARD_BG};border-radius:12px;padding:1.2rem;margin-bottom:0.8rem;">'
         f'<div style="display:flex;justify-content:space-between;align-items:center;">'
         f'<div style="font-family:{HF};color:{T["TEXT"]};font-size:1.1rem;text-transform:uppercase;">{fa} vs {fb}</div>'
-        f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.8rem;">R{rnd} {time}</div></div>'
+        f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.8rem;">R{rnd} {fight_time}</div></div>'
         f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.8rem;margin-top:0.4rem;">{method}</div>'
         f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.75rem;margin-top:0.2rem;">Referee: {referee}</div>'
         f'</div>',
@@ -1223,7 +1228,7 @@ def _render_fight_detail(fight_url: str, selected_fighter: str):
     def get_pair(row, key):
         v = row.get(key, ["--", "--"])
         if isinstance(v, list) and len(v) >= 2:
-            return v[0], v[1]
+            return esc(v[0]), esc(v[1])
         return "--", "--"
 
     kd_a, kd_b = get_pair(total_row, "KD")
@@ -1235,7 +1240,7 @@ def _render_fight_detail(fight_url: str, selected_fighter: str):
     ctrl_a, ctrl_b = get_pair(total_row, "Ctrl")
 
     # Figure out which index is the selected fighter
-    is_a = selected_fighter.lower() in fa.lower()
+    is_a = selected_fighter.lower().strip() == fd.get("fighter_a", "").lower().strip()
     my_label = fa if is_a else fb
     opp_label = fb if is_a else fa
 
@@ -1383,18 +1388,18 @@ def display_prediction(prediction: dict, fights_df: pd.DataFrame = None):
     # Reasons breakdown
     st.markdown('<div class="section-header">Prediction Breakdown</div>', unsafe_allow_html=True)
 
-    winner = prediction["predicted_winner"]
+    winner = esc(prediction["predicted_winner"])
     col1, col2 = st.columns(2)
     with col1:
         st.markdown(f"**Why {winner} wins:**")
         for reason in prediction.get("reasons_winner", []):
-            st.markdown(f'<div class="reason-box">{reason}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="reason-box">{esc(reason)}</div>', unsafe_allow_html=True)
     with col2:
-        loser = prediction.get("predicted_loser", "")
+        loser = esc(prediction.get("predicted_loser", ""))
         if prediction.get("reasons_loser"):
             st.markdown(f"**{loser}'s advantages:**")
             for reason in prediction.get("reasons_loser", []):
-                st.markdown(f'<div class="reason-box against">{reason}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="reason-box against">{esc(reason)}</div>', unsafe_allow_html=True)
 
 
 # ── Main ─────────────────────────────────────────────────────────────────────
@@ -1406,10 +1411,10 @@ def main():
         _loading_screen()
     fighters_df = load_fighters()
     fights_df = load_fights()
-    fighters_clean = clean_fighter_data(fighters_df)
 
-    # Train model
+    # Train model (load_data cleans + enriches fighters internally)
     predictor = get_trained_model(fighters_df, fights_df)
+    fighters_clean = predictor.fighters_df
     loading_placeholder.empty()
 
     # ── Header bar with stats (bright, right-aligned) ────────────────────────
@@ -1552,13 +1557,13 @@ def main():
                     last = first.upper()
                     first = ""
 
-                record = esc(f"{int(f.get('wins', 0))}-{int(f.get('losses', 0))}-{int(f.get('draws', 0))}")
+                record = f"{int(f.get('wins', 0))}-{int(f.get('losses', 0))}-{int(f.get('draws', 0))}"
                 stance = esc(f.get("stance", "") or "Unknown")
                 dob = f.get("dob", "")
                 age_str = ""
                 if dob and str(dob) != "nan":
                     try:
-                        from datetime import datetime
+    
                         born = datetime.strptime(str(dob)[:10], "%Y-%m-%d")
                         age_str = str(int((datetime.now() - born).days / 365.25))
                     except Exception:
@@ -1703,16 +1708,16 @@ def main():
                 found_upcoming = False
                 if upcoming_check and upcoming_check.get("fights"):
                     for fight in upcoming_check["fights"]:
-                        if (f_name.lower() in fight["fighter_a"].lower() or
-                                f_name.lower() in fight["fighter_b"].lower()):
+                        if (f_name.lower().strip() == fight["fighter_a"].lower().strip() or
+                                f_name.lower().strip() == fight["fighter_b"].lower().strip()):
                             found_upcoming = True
-                            opp = fight["fighter_b"] if f_name.lower() in fight["fighter_a"].lower() else fight["fighter_a"]
-                            wc = fight.get("weight_class", "")
-                            evt_name = upcoming_check.get("event", "")
-                            evt_date = upcoming_check.get("date", "")
+                            opp = fight["fighter_b"] if f_name.lower().strip() == fight["fighter_a"].lower().strip() else fight["fighter_a"]
+                            wc = esc(fight.get("weight_class", ""))
+                            evt_name = esc(upcoming_check.get("event", ""))
+                            evt_date = esc(upcoming_check.get("date", ""))
                             st.markdown(
                                 f'<div style="background:{CARD_BG};border-radius:16px;padding:1.5rem;">'
-                                f'<div style="font-family:{HF};color:{T["TEXT"]};font-size:1.1rem;text-transform:uppercase;">{f_name} vs {opp}</div>'
+                                f'<div style="font-family:{HF};color:{T["TEXT"]};font-size:1.1rem;text-transform:uppercase;">{esc(f_name)} vs {esc(opp)}</div>'
                                 f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.8rem;margin-top:0.4rem;">{wc}</div>'
                                 f'<div style="font-family:{BF};color:{T["TEXT_MUTED"]};font-size:0.8rem;margin-top:0.2rem;">{evt_name} -- {evt_date}</div>'
                                 f'</div>',
@@ -1784,10 +1789,10 @@ def main():
                 for news_tab, cat in zip(news_tabs, available_cats):
                     with news_tab:
                         for i, article in enumerate(grouped[cat]):
-                            title = article["title"]
-                            link = article["link"]
-                            source = article["source"]
-                            date = article["date"]
+                            title = esc(article["title"])
+                            link = esc(article["link"])
+                            source = esc(article["source"])
+                            date = esc(article["date"])
                             border = f"border-bottom:1px solid {T['BORDER']};" if i < len(grouped[cat]) - 1 else ""
                             st.markdown(
                                 f'<div style="padding:1.1rem 0.5rem;{border}">'

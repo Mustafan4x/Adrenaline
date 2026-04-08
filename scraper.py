@@ -470,7 +470,8 @@ def incremental_update(max_new_events: int = 5, progress_callback=None) -> dict:
 
     if new_fights:
         new_fights_df = pd.DataFrame(new_fights)
-        fights_df = pd.concat([fights_df, new_fights_df], ignore_index=True)
+        # Prepend new fights to maintain most-recent-first order
+        fights_df = pd.concat([new_fights_df, fights_df], ignore_index=True)
         fights_df.to_csv(fights_path, index=False)
 
     # Re-scrape only fighters who fought in new events

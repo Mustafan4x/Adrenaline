@@ -397,8 +397,9 @@ def build_training_data(fighters_df: pd.DataFrame, fights_df: pd.DataFrame) -> t
 
     Temporal features are computed per-fight using only prior fights to prevent
     data leakage. Fighter order is randomized to prevent positional bias.
+
+    Expects fighters_df to already be cleaned via clean_fighter_data().
     """
-    fighters_df = clean_fighter_data(fighters_df)
 
     # Build a lookup dict for base stats
     fighter_lookup = {}

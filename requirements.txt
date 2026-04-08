@@ -2,9 +2,6 @@ pandas==3.0.2
 numpy==2.4.4
 scikit-learn==1.8.0
 xgboost==3.2.0
-matplotlib==3.10.8
-seaborn==0.13.2
-plotly==6.6.0
 streamlit==1.56.0
 requests==2.33.1
 beautifulsoup4==4.14.3
