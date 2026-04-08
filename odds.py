@@ -320,7 +320,15 @@ def fetch_upcoming_odds(api_key: str = None) -> list[dict]:
     Requires an API key (free tier: 500 requests/month).
     Set via ODDS_API_KEY environment variable or pass directly.
     """
-    api_key = api_key or os.environ.get("ODDS_API_KEY", "")
+    if not api_key:
+        # Try Streamlit secrets first, then environment variable
+        try:
+            import streamlit as st
+            api_key = st.secrets.get("ODDS_API_KEY", "")
+        except Exception:
+            pass
+        if not api_key:
+            api_key = os.environ.get("ODDS_API_KEY", "")
     if not api_key:
         return []
 
