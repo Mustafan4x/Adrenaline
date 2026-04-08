@@ -211,7 +211,7 @@ st.markdown(f"""
     }}
     .stTabs [data-baseweb="tab"] {{
         font-family: {BF};
-        color: {T["TEXT_MUTED"]};
+        color: {T["TEXT"]};
         font-weight: 600;
         letter-spacing: 1.5px;
         text-transform: uppercase;
