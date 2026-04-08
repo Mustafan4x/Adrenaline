@@ -1,0 +1,56 @@
+fighter_a,fighter_b,odds_a,odds_b,implied_prob_a,implied_prob_b,event
+alexander volkanovski,max holloway,-200,155,0.6667,0.3922,UFC Fight Night: Adesanya vs. Pyfer
+alex pereira,sean strickland,107,-130,0.4831,0.5652,UFC Fight Night: Adesanya vs. Pyfer
+belal muhammad,vicente luque,151,-190,0.3984,0.6552,UFC Fight Night: Evloev vs. Murphy
+jasmine jasudavicius,natalia silva,-250,200,0.7143,0.3333,UFC Fight Night: Emmett vs. Vallejos
+kyle daukaus,roman dolidze,-250,205,0.7143,0.3279,UFC Fight Night: Emmett vs. Vallejos
+jesus aguilar,sumudaerji,144,-180,0.4098,0.6429,UFC 326: Holloway vs. Oliveira 2
+diyar nurgozhay,rafael tobias,146,-175,0.4065,0.6364,UFC 326: Holloway vs. Oliveira 2
+luke fernandez,rodolfo bellato,-230,190,0.697,0.3448,UFC 326: Holloway vs. Oliveira 2
+belal muhammad,vicente luque,151,-190,0.3984,0.6552,UFC Fight Night: Moreno vs. Kavanagh
+jean matsumoto,miles johns,-250,210,0.7143,0.3226,UFC Fight Night: Strickland vs. Hernandez
+christian leroy duncan,eryk anders,-500,380,0.8333,0.2083,UFC Fight Night: Strickland vs. Hernandez
+joselyne edwards,priscila cachoeira,-420,330,0.8077,0.2326,UFC Fight Night: Strickland vs. Hernandez
+cody brundage,eric mcconico,-225,185,0.6923,0.3509,UFC Fight Night: Strickland vs. Hernandez
+charles oliveira,justin gaethje,-145,118,0.5918,0.4587,UFC Fight Night: Bautista vs. Oliveira
+macy chiasson,norma dumont,183,-230,0.3534,0.697,UFC Fight Night: Bautista vs. Oliveira
+brandon royval,matt schnell,-260,205,0.7222,0.3279,UFC Fight Night: Bautista vs. Oliveira
+melissa gatto,tracy cortez,105,-125,0.4878,0.5556,UFC Fight Night: Bautista vs. Oliveira
+belal muhammad,vicente luque,151,-190,0.3984,0.6552,UFC 325: Volkanovski vs. Lopes 2
+denzel freeman,josh hokit,215,-265,0.3175,0.726,UFC 324: Gaethje vs. Pimblett
+alexander hernandez,michael johnson,-110,-110,0.5238,0.5238,UFC 324: Gaethje vs. Pimblett
+adam fugitt,ty miller,410,-480,0.1961,0.8276,UFC 324: Gaethje vs. Pimblett
+belal muhammad,vicente luque,151,-190,0.3984,0.6552,UFC Fight Night: Royval vs. Kape
+antonio trocoli,mansur abdul-malik,850,-1408,0.1053,0.9337,UFC 323: Dvalishvili vs. Yan 2
+mairon santos,muhammad naimov,-245,200,0.7101,0.3333,UFC 323: Dvalishvili vs. Yan 2
+arman tsarukyan,mateusz gamrot,-255,210,0.7183,0.3226,UFC Fight Night: Tsarukyan vs. Hooker
+chris curtis,rodolfo vieira,-120,100,0.5455,0.5,UFC Fight Night: Tsarukyan vs. Hooker
+baisangur susurkaev,eric mcconico,-1000,700,0.9091,0.125,UFC 322: Della Maddalena vs. Makhachev
+matheus camilo,viacheslav borshchev,-165,145,0.6226,0.4082,UFC 322: Della Maddalena vs. Makhachev
+belal muhammad,vicente luque,151,-190,0.3984,0.6552,UFC Fight Night: Bonfim vs. Brown
+belal muhammad,vicente luque,151,-190,0.3984,0.6552,UFC Fight Night: Garcia vs. Onama
+ciryl gane,tom aspinall,310,-385,0.2439,0.7938,UFC 321: Aspinall vs. Gane
+mackenzie dern,virna jandiroba,-145,120,0.5918,0.4545,UFC 321: Aspinall vs. Gane
+mario bautista,umar nurmagomedov,460,-620,0.1786,0.8611,UFC 321: Aspinall vs. Gane
+alexander volkov,jailton almeida,155,-190,0.3922,0.6552,UFC 321: Aspinall vs. Gane
+aleksandar rakic,azamat murzakanov,-118,104,0.5413,0.4902,UFC 321: Aspinall vs. Gane
+nasrat haqparast,quillan salkilld,102,-127,0.495,0.5595,UFC 321: Aspinall vs. Gane
+ikram aliskerov,junyong park,-225,175,0.6923,0.3636,UFC 321: Aspinall vs. Gane
+ludovit klein,mateusz rebecki,-148,120,0.5968,0.4545,UFC 321: Aspinall vs. Gane
+louie sutherland,valter walker,310,-385,0.2439,0.7938,UFC 321: Aspinall vs. Gane
+jose delgado,nathaniel wood,-157,125,0.6109,0.4444,UFC 321: Aspinall vs. Gane
+chris barnett,hamdy abdelwahab,350,-450,0.2222,0.8182,UFC 321: Aspinall vs. Gane
+azat maksum,mitch raposo,-500,380,0.8333,0.2083,UFC 321: Aspinall vs. Gane
+jaqueline amorim,mizuki,-450,340,0.8182,0.2273,UFC 321: Aspinall vs. Gane
+karine silva,ketlen souza,-225,175,0.6923,0.3636,UFC Fight Night: De Ridder vs. Allen
+arman tsarukyan,mateusz gamrot,-255,210,0.7183,0.3226,UFC Fight Night: Oliveira vs. Gamrot
+chris curtis,rodolfo vieira,-120,100,0.5455,0.5,UFC Fight Night: Oliveira vs. Gamrot
+nikolay veretennikov,punahele soriano,295,-385,0.2532,0.7938,UFC 320: Ankalaev vs. Pereira 2
+macy chiasson,yana santos,-200,170,0.6667,0.3704,UFC 320: Ankalaev vs. Pereira 2
+chris gutierrez,farid basharat,430,-560,0.1887,0.8485,UFC 320: Ankalaev vs. Pereira 2
+austin vanderford,ramiz brahimaj,-295,240,0.7468,0.2941,UFC 320: Ankalaev vs. Pereira 2
+brogan walker,veronica hardy,575,-800,0.1481,0.8889,UFC 320: Ankalaev vs. Pereira 2
+belal muhammad,vicente luque,151,-190,0.3984,0.6552,UFC Fight Night: Ulberg vs. Reyes
+belal muhammad,vicente luque,151,-190,0.3984,0.6552,UFC Fight Night: Lopes vs. Silva
+belal muhammad,vicente luque,151,-190,0.3984,0.6552,UFC Fight Night: Imavov vs. Borralho
+belal muhammad,vicente luque,151,-190,0.3984,0.6552,UFC Fight Night: Moicano vs. Duncan

@@ -274,6 +274,8 @@ def create_feature_vector(fighter: pd.Series) -> dict:
         "dec_rate": fighter.get("dec_rate", 0.0),
         # Weight class tier
         "weight_class_tier": fighter.get("weight_class_tier", 7),
+        # Betting odds implied probability (0.5 = no odds available)
+        "implied_prob": fighter.get("implied_prob", 0.5),
         # One-hot encoded combat style
         "style_striker": 1 if fighter.get("combat_style") == "Striker" else 0,
         "style_grappler": 1 if fighter.get("combat_style") == "Grappler" else 0,
@@ -294,6 +296,7 @@ FEATURE_COLUMNS = [
     "opponent_quality",
     "ko_rate", "sub_rate", "dec_rate",
     "weight_class_tier",
+    "implied_prob",
     "style_striker", "style_grappler", "style_aggressive",
     "style_passive", "style_all_rounder"
 ]
@@ -390,7 +393,7 @@ def _compute_temporal_features(fighter_name: str, fights_before: pd.DataFrame, f
     }
 
 
-def build_training_data(fighters_df: pd.DataFrame, fights_df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+def build_training_data(fighters_df: pd.DataFrame, fights_df: pd.DataFrame, odds_df: pd.DataFrame = None) -> tuple[np.ndarray, np.ndarray]:
     """
     Build training data from historical fights.
     Returns X (difference matrices) and y (1 if fighter_a won, 0 if fighter_b won).
@@ -415,6 +418,15 @@ def build_training_data(fighters_df: pd.DataFrame, fights_df: pd.DataFrame) -> t
         for name in [fight.get("fighter_a", ""), fight.get("fighter_b", "")]:
             if name:
                 fighter_weight_classes.setdefault(name, []).append(wc)
+
+    # Build odds lookup: (fighter_a_norm, fighter_b_norm) -> (prob_a, prob_b)
+    odds_lookup = {}
+    if odds_df is not None and len(odds_df) > 0:
+        for _, row in odds_df.iterrows():
+            fa = str(row.get("fighter_a", "")).strip().lower()
+            fb = str(row.get("fighter_b", "")).strip().lower()
+            odds_lookup[(fa, fb)] = (row["implied_prob_a"], row["implied_prob_b"])
+            odds_lookup[(fb, fa)] = (row["implied_prob_b"], row["implied_prob_a"])
 
     rng = np.random.RandomState(42)
 
@@ -450,6 +462,15 @@ def build_training_data(fighters_df: pd.DataFrame, fights_df: pd.DataFrame) -> t
         wc_b = fighter_weight_classes.get(fb_name, [])
         fa["weight_class_tier"] = WEIGHT_CLASS_ORDER.get(max(set(wc_a), key=wc_a.count), 7) if wc_a else 7
         fb["weight_class_tier"] = WEIGHT_CLASS_ORDER.get(max(set(wc_b), key=wc_b.count), 7) if wc_b else 7
+
+        # Set betting odds implied probability
+        odds_key = (fa_name.lower(), fb_name.lower())
+        if odds_key in odds_lookup:
+            fa["implied_prob"] = odds_lookup[odds_key][0]
+            fb["implied_prob"] = odds_lookup[odds_key][1]
+        else:
+            fa["implied_prob"] = 0.5
+            fb["implied_prob"] = 0.5
 
         winner_lower = str(winner).strip().lower()
 

@@ -20,6 +20,7 @@ from preprocessing import (
     get_style_matchup_description,
     enrich_fighters,
 )
+from odds import build_odds_database, fetch_upcoming_odds, american_to_implied_prob
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -32,6 +33,7 @@ class UFCPredictor:
         self.model = None
         self.fighters_df = None
         self.fights_df = None
+        self.odds_df = None
         self.is_trained = False
         self.cv_scores = None
 
@@ -39,6 +41,8 @@ class UFCPredictor:
         """Load fighter and fight data."""
         self.fighters_df = clean_fighter_data(fighters_df)
         self.fights_df = fights_df
+        # Load odds data
+        self.odds_df = build_odds_database(fights_df)
         # Enrich with recent form, opponent quality, finish rates, weight class
         self.fighters_df = enrich_fighters(self.fighters_df, fights_df)
 
@@ -47,7 +51,7 @@ class UFCPredictor:
         if X is None or y is None:
             if self.fighters_df is None or self.fights_df is None:
                 raise ValueError("No data loaded. Call load_data() first.")
-            X, y = build_training_data(self.fighters_df, self.fights_df)
+            X, y = build_training_data(self.fighters_df, self.fights_df, self.odds_df)
 
         if len(X) == 0:
             raise ValueError("No valid training samples found.")
@@ -99,10 +103,14 @@ class UFCPredictor:
         self.is_trained = True
         print("Model loaded successfully.")
 
-    def predict_matchup(self, fighter_a_name: str, fighter_b_name: str) -> dict:
+    def predict_matchup(self, fighter_a_name: str, fighter_b_name: str,
+                        odds_a: int = None, odds_b: int = None) -> dict:
         """
         Predict the outcome of a matchup between two fighters.
         Returns prediction details including winner, confidence, and reasoning.
+
+        Optional odds_a/odds_b: American moneyline odds for each fighter.
+        If provided, they're used as features. If not, defaults to 0.5 (neutral).
         """
         if not self.is_trained:
             raise ValueError("Model not trained. Call train() first.")
@@ -117,6 +125,18 @@ class UFCPredictor:
             raise ValueError(f"Fighter not found: {fighter_a_name}")
         if fb is None:
             raise ValueError(f"Fighter not found: {fighter_b_name}")
+
+        # Set odds if provided
+        fa = fa.copy()
+        fb = fb.copy()
+        if odds_a is not None:
+            fa["implied_prob"] = american_to_implied_prob(odds_a)
+        else:
+            fa["implied_prob"] = 0.5
+        if odds_b is not None:
+            fb["implied_prob"] = american_to_implied_prob(odds_b)
+        else:
+            fb["implied_prob"] = 0.5
 
         # Create difference matrix
         diff = create_difference_matrix(fa, fb)
@@ -230,6 +250,7 @@ class UFCPredictor:
             "sub_rate": "higher submission finish rate",
             "dec_rate": "more decision wins",
             "weight_class_tier": "weight class factor",
+            "implied_prob": "betting market favorite",
             "style_striker": "striking style",
             "style_grappler": "grappling style",
             "style_aggressive": "aggressive approach",
@@ -257,13 +278,30 @@ class UFCPredictor:
 
         return {"winner": winner_reasons, "loser": loser_reasons}
 
-    def predict_card(self, card: list[dict]) -> list[dict]:
-        """Predict outcomes for an entire fight card."""
+    def predict_card(self, card: list[dict], live_odds: list[dict] = None) -> list[dict]:
+        """Predict outcomes for an entire fight card.
+
+        live_odds: optional list from fetch_upcoming_odds() to enhance predictions.
+        """
+        # Build odds lookup from live odds
+        odds_map = {}
+        if live_odds:
+            for o in live_odds:
+                fa = o["fighter_a"].lower().strip()
+                fb = o["fighter_b"].lower().strip()
+                odds_map[(fa, fb)] = (o["odds_a"], o["odds_b"])
+                odds_map[(fb, fa)] = (o["odds_b"], o["odds_a"])
+
         results = []
         for fight in card:
             try:
-                prediction = self.predict_matchup(fight["fighter_a"], fight["fighter_b"])
+                fa = fight["fighter_a"]
+                fb = fight["fighter_b"]
+                key = (fa.lower().strip(), fb.lower().strip())
+                odds_a, odds_b = odds_map.get(key, (None, None))
+                prediction = self.predict_matchup(fa, fb, odds_a, odds_b)
                 prediction["weight_class"] = fight.get("weight_class", "")
+                prediction["has_odds"] = odds_a is not None
                 results.append(prediction)
             except ValueError as e:
                 results.append({

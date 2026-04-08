@@ -36,6 +36,7 @@ from preprocessing import (
     FEATURE_COLUMNS,
 )
 from model import UFCPredictor
+from odds import fetch_upcoming_odds
 
 # ── Design tokens ────────────────────────────────────────────────────────────
 HF = "'Russo One', sans-serif"
@@ -1491,7 +1492,8 @@ def main():
 
             if st.button("PREDICT ENTIRE CARD", type="primary", use_container_width=True):
                 with st.spinner("Sizing up the competition..."):
-                    st.session_state.fc_results = predictor.predict_card(upcoming_fc["fights"])
+                    live_odds = fetch_upcoming_odds()
+                    st.session_state.fc_results = predictor.predict_card(upcoming_fc["fights"], live_odds)
                     st.session_state.active_fc = 0
                     st.rerun()
 
