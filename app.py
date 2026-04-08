@@ -43,12 +43,12 @@ AC_DARK = "#b71c1c"
 
 # Theme palettes
 DARK_THEME = {
-    "BG": "#0d0d0d", "CARD_BG": "#111", "INNER_BG": "#161616",
-    "TEXT": "#e0e0e0", "TEXT_DIM": "#999", "TEXT_MUTED": "#555",
-    "BORDER": "#1a1a1a", "BORDER_HOVER": "#333",
-    "INITIALS_BG": "#1a1a1a", "INITIALS_BORDER": "#333",
-    "REASON_BG": "rgba(100,100,100,0.1)", "TABLE_HOVER": "rgba(211,47,47,0.03)",
-    "GRADIENT_END": "rgba(211,47,47,0.06)",
+    "BG": "#161616", "CARD_BG": "#1e1e1e", "INNER_BG": "#252525",
+    "TEXT": "#e8e8e8", "TEXT_DIM": "#aaa", "TEXT_MUTED": "#666",
+    "BORDER": "#2a2a2a", "BORDER_HOVER": "#444",
+    "INITIALS_BG": "#2a2a2a", "INITIALS_BORDER": "#444",
+    "REASON_BG": "rgba(100,100,100,0.12)", "TABLE_HOVER": "rgba(211,47,47,0.05)",
+    "GRADIENT_END": "rgba(211,47,47,0.08)",
 }
 LIGHT_THEME = {
     "BG": "#f5f5f5", "CARD_BG": "#ffffff", "INNER_BG": "#eaeaea",
