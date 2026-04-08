@@ -829,7 +829,7 @@ def _fighter_card_html(f: dict, img_url: str) -> str:
     str_acc = f.get("str_acc", 0)
     str_pct = f"{str_acc*100:.0f}%" if str_acc else "0%"
     td_avg = f.get("td_avg", 0)
-    initials = get_fighter_initials(name)
+    initials = get_fighter_initials(raw_name)
 
     # Image or initials fallback (no JS onerror -- Streamlit strips it)
     if img_url:
